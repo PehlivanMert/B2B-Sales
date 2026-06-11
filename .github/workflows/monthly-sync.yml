@@ -1,0 +1,43 @@
+name: Monthly TÜRSAB Delta Sync
+
+on:
+  schedule:
+    # Runs at 00:00 on day-of-month 1
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  scrape-and-sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 firebase-admin
+
+      - name: Run Delta Scraper & Uploader
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          # Create a serviceAccountKey.json from GitHub Secrets
+          echo "$FIREBASE_SERVICE_ACCOUNT" > serviceAccountKey.json
+          
+          # The delta scraper should connect to Firestore, get the max document_no,
+          # scrape the next numbers up to e.g. +1000, and upload new ones using firebase-admin
+          # Since the actual Python script for this specific delta operation is hypothetical for now,
+          # we call the placeholder script:
+          # python3 data_prep/delta_sync.py
+          
+          echo "Placeholder: Python script would run here, fetching from MAX_ID."
+
+      - name: Cleanup
+        run: rm -f serviceAccountKey.json
