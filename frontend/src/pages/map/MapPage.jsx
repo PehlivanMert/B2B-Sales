@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { useCrm } from '../../context/CrmContext';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Loader2, Navigation, MapPin, X } from 'lucide-react';
@@ -32,8 +31,8 @@ const SelectedIcon = L.icon({
 });
 
 export default function MapPage() {
+  const { crmData } = useCrm();
   const [baseAgencies, setBaseAgencies] = useState([]);
-  const [crmData, setCrmData] = useState({});
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -64,24 +63,6 @@ export default function MapPage() {
     fetchBaseData();
   }, []);
 
-  // 2. Listen to CRM changes
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'agency_crm'),
-      (snapshot) => {
-        const crmUpdates = {};
-        snapshot.forEach((doc) => {
-          crmUpdates[doc.id] = doc.data();
-        });
-        setCrmData(crmUpdates);
-      },
-      (err) => {
-        console.error('Error fetching CRM data:', err);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
 
   // 3. Merge Base Data + CRM Data
   const agencies = useMemo(() => {

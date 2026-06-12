@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CrmProvider } from './context/CrmContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
@@ -17,7 +18,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           
-          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/" element={<ProtectedRoute><CrmProvider><Layout /></CrmProvider></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="agencies" element={<AgenciesPage />} />
             <Route path="map" element={<MapPage />} />

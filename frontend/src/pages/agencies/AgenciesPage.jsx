@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { useCrm } from '../../context/CrmContext';
 import AgencyTable from '../../components/agencies/AgencyTable';
 import { Loader2 } from 'lucide-react';
 
 export default function AgenciesPage() {
+  const { crmData, crmLoading } = useCrm();
   const [baseAgencies, setBaseAgencies] = useState([]);
-  const [crmData, setCrmData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // 1. Fetch static JSON data
+  // Fetch static JSON data (zero Firestore read cost)
   useEffect(() => {
     async function fetchBaseData() {
       try {
         setLoading(true);
-        // Zero-read cost static fetch
         const res = await fetch('/agencies.json');
         if (!res.ok) throw new Error('Acente verisi bulunamadı');
         const data = await res.json();
@@ -30,25 +28,6 @@ export default function AgenciesPage() {
     fetchBaseData();
   }, []);
 
-  // 2. Listen to CRM changes
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'agency_crm'),
-      (snapshot) => {
-        const crmUpdates = {};
-        snapshot.forEach((doc) => {
-          crmUpdates[doc.id] = doc.data();
-        });
-        setCrmData(crmUpdates);
-      },
-      (err) => {
-        console.error('Error fetching CRM data:', err);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-
   // 3. Merge Base Data + CRM Data
   const agencies = React.useMemo(() => {
     if (!baseAgencies.length) return [];
@@ -58,7 +37,7 @@ export default function AgenciesPage() {
     }));
   }, [baseAgencies, crmData]);
 
-  if (loading) {
+  if (loading || crmLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { useCrm } from '../context/CrmContext';
 import { Loader2, Users, FileCheck, Building } from 'lucide-react';
 
 export default function Dashboard() {
+  const { crmData, crmLoading } = useCrm();
+
   const [baseAgencies, setBaseAgencies] = useState([]);
-  const [crmData, setCrmData] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch static JSON data
+  // Fetch static JSON data (zero Firestore read cost)
   useEffect(() => {
     async function fetchBaseData() {
       try {
@@ -24,25 +24,6 @@ export default function Dashboard() {
       }
     }
     fetchBaseData();
-  }, []);
-
-  // 2. Listen to CRM changes
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'agency_crm'),
-      (snapshot) => {
-        const crmUpdates = {};
-        snapshot.forEach((doc) => {
-          crmUpdates[doc.id] = doc.data();
-        });
-        setCrmData(crmUpdates);
-      },
-      (err) => {
-        console.error('Error fetching CRM data:', err);
-      }
-    );
-
-    return () => unsubscribe();
   }, []);
 
   // 3. Merge and compute
@@ -100,7 +81,7 @@ export default function Dashboard() {
     return { total, contracted, addedThisMonth, topCities, statusCounts };
   }, [agencies, crmData]);
 
-  if (loading) {
+  if (loading || crmLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
