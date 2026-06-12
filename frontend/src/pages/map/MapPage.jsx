@@ -125,9 +125,17 @@ export default function MapPage() {
   const generateRouteUrl = () => {
     if (selectedAgencies.length < 1) return;
     
-    // Google maps format: https://www.google.com/maps/dir/lat1,lng1/lat2,lng2/...
-    const waypoints = selectedAgencies.map(a => `${a.lat},${a.lng}`).join('/');
-    const url = `https://www.google.com/maps/dir/${waypoints}`;
+    if (selectedAgencies.length === 1) {
+      const a = selectedAgencies[0];
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}`;
+      window.open(url, '_blank');
+      return;
+    }
+
+    const waypoints = selectedAgencies.slice(0, -1).map(a => `${a.lat},${a.lng}`).join('|');
+    const destination = selectedAgencies[selectedAgencies.length - 1];
+    
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&waypoints=${waypoints}`;
     window.open(url, '_blank');
   };
 
