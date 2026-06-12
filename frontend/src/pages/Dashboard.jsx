@@ -122,7 +122,7 @@ export default function Dashboard() {
         {/* En Çok Acentesi Olan İller */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">En Çok Acentesi Olan 5 İl</h3>
-          <div className="h-72 w-full mt-4">
+          <div className="h-72 w-full mt-4" style={{ minWidth: 0, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={metrics.topCities.map(([city, count]) => ({ city, count }))}
@@ -142,7 +142,7 @@ export default function Dashboard() {
         {/* Müşteri Durumu Dağılımı */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Müşteri Durumu Dağılımı</h3>
-          <div className="h-72 w-full mt-4">
+          <div className="h-72 w-full mt-4" style={{ minWidth: 0, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

@@ -5,8 +5,9 @@ import AgencyTable from '../../components/agencies/AgencyTable';
 import { Loader2 } from 'lucide-react';
 
 export default function AgenciesPage() {
-  const { crmData, crmLoading } = useCrm();
-  const { agencies: baseAgencies, agenciesLoading } = useAgencies();
+  const { crmData, crmLoading, error: crmError } = useCrm();
+  const { agencies: baseAgencies, agenciesLoading, error: agenciesError } = useAgencies();
+  const error = crmError || agenciesError;
 
   // Merge Base Data + CRM Data
   const agencies = useMemo(() => {
