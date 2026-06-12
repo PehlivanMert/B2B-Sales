@@ -1,35 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useCrm } from '../../context/CrmContext';
+import { useAgencies } from '../../context/AgenciesContext';
 import AgencyTable from '../../components/agencies/AgencyTable';
 import { Loader2 } from 'lucide-react';
 
 export default function AgenciesPage() {
   const { crmData, crmLoading } = useCrm();
-  const [baseAgencies, setBaseAgencies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { agencies: baseAgencies, agenciesLoading } = useAgencies();
 
-  // Fetch static JSON data (zero Firestore read cost)
-  useEffect(() => {
-    async function fetchBaseData() {
-      try {
-        setLoading(true);
-        const res = await fetch('/agencies.json');
-        if (!res.ok) throw new Error('Acente verisi bulunamadı');
-        const data = await res.json();
-        setBaseAgencies(data);
-      } catch (err) {
-        console.error('Error fetching static agencies:', err);
-        setError('Acente verileri yüklenirken hata oluştu.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchBaseData();
-  }, []);
-
-  // 3. Merge Base Data + CRM Data
-  const agencies = React.useMemo(() => {
+  // Merge Base Data + CRM Data
+  const agencies = useMemo(() => {
     if (!baseAgencies.length) return [];
     return baseAgencies.map(agency => ({
       ...agency,
@@ -37,7 +17,7 @@ export default function AgenciesPage() {
     }));
   }, [baseAgencies, crmData]);
 
-  if (loading || crmLoading) {
+  if (agenciesLoading || crmLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />

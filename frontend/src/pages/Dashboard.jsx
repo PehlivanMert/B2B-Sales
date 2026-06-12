@@ -1,32 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useCrm } from '../context/CrmContext';
-import { Loader2, Users, FileCheck, Building } from 'lucide-react';
+import { useAgencies } from '../context/AgenciesContext';
+import { Loader2, Users, FileCheck, Building, TrendingUp } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function Dashboard() {
   const { crmData, crmLoading } = useCrm();
+  const { agencies: baseAgencies, agenciesLoading } = useAgencies();
 
-  const [baseAgencies, setBaseAgencies] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch static JSON data (zero Firestore read cost)
-  useEffect(() => {
-    async function fetchBaseData() {
-      try {
-        setLoading(true);
-        const res = await fetch('/agencies.json');
-        if (!res.ok) throw new Error('Acente verisi bulunamadı');
-        const data = await res.json();
-        setBaseAgencies(data);
-      } catch (err) {
-        console.error('Error fetching static agencies:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchBaseData();
-  }, []);
-
-  // 3. Merge and compute
+  // Merge static agency data with live CRM data
   const agencies = useMemo(() => {
     if (!baseAgencies.length) return [];
     return baseAgencies.map(agency => ({
@@ -38,10 +20,11 @@ export default function Dashboard() {
   const metrics = useMemo(() => {
     const total = agencies.length;
     let contracted = 0;
+    // Count agencies that had a CRM status update this month
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    let addedThisMonth = 0;
-    
+    let updatedThisMonth = 0;
+
     const cityCounts = {};
     const statusCounts = {
       lead: 0,
@@ -53,19 +36,18 @@ export default function Dashboard() {
 
     agencies.forEach(a => {
       const status = a.status || 'lead';
-      
+
       if (status === 'contracted') contracted++;
-      
+
       if (statusCounts[status] !== undefined) {
         statusCounts[status]++;
       }
-      
-      // We don't have created_at for all, so we use CRM notes as a proxy if needed, or assume static data is baseline
-      // Let's check if CRM data has a created_at
-      if (crmData[a.docId]?.createdAt?.toDate) {
-        const d = crmData[a.docId].createdAt.toDate();
+
+      // Count agencies whose CRM record was updated this month
+      if (a.lastUpdatedAt?.toDate) {
+        const d = a.lastUpdatedAt.toDate();
         if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-          addedThisMonth++;
+          updatedThisMonth++;
         }
       }
 
@@ -78,10 +60,10 @@ export default function Dashboard() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    return { total, contracted, addedThisMonth, topCities, statusCounts };
-  }, [agencies, crmData]);
+    return { total, contracted, updatedThisMonth, topCities, statusCounts };
+  }, [agencies]);
 
-  if (loading || crmLoading) {
+  if (agenciesLoading || crmLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
@@ -129,8 +111,9 @@ export default function Dashboard() {
             <Users className="w-8 h-8 text-purple-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500 mb-1">Bu Ay Eklenenler</p>
-            <p className="text-3xl font-bold text-purple-600">{metrics.addedThisMonth.toLocaleString('tr-TR')}</p>
+            <p className="text-sm font-medium text-slate-500 mb-1">Bu Ay Güncellenenler</p>
+            <p className="text-3xl font-bold text-purple-600">{metrics.updatedThisMonth.toLocaleString('tr-TR')}</p>
+            <p className="text-xs text-slate-400 mt-1">CRM kaydı güncellenen acente</p>
           </div>
         </div>
       </div>
@@ -139,57 +122,53 @@ export default function Dashboard() {
         {/* En Çok Acentesi Olan İller */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">En Çok Acentesi Olan 5 İl</h3>
-          <div className="space-y-4">
-            {metrics.topCities.map(([city, count], index) => {
-              const maxCount = metrics.topCities[0][1];
-              const percentage = (count / maxCount) * 100;
-              return (
-                <div key={city} className="flex items-center gap-3">
-                  <div className="w-6 font-semibold text-slate-400 text-sm">{index + 1}.</div>
-                  <div className="flex-1">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-slate-700">{city}</span>
-                      <span className="text-slate-500 font-medium">{count.toLocaleString('tr-TR')}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-1000" 
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="h-72 w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={metrics.topCities.map(([city, count]) => ({ city, count }))}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                <XAxis type="number" />
+                <YAxis dataKey="city" type="category" width={80} />
+                <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(value) => value.toLocaleString('tr-TR')} />
+                <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
         {/* Müşteri Durumu Dağılımı */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Müşteri Durumu Dağılımı</h3>
-          <div className="space-y-4">
-            {Object.entries(statusCounts).map(([statusKey, count]) => {
-              if (count === 0 && statusKey !== 'lead') return null; // hide empty statuses except lead
-              const percentage = (count / Math.max(metrics.total, 1)) * 100;
-              const { label, color } = statusLabels[statusKey];
-              return (
-                <div key={statusKey}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${color}`}></div>
-                      <span className="font-medium text-slate-700">{label}</span>
-                    </div>
-                    <span className="text-slate-500 font-medium">{count.toLocaleString('tr-TR')} ({percentage.toFixed(1)}%)</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div 
-                      className={`${color} h-2 rounded-full transition-all duration-1000`} 
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="h-72 w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={Object.entries(statusCounts).map(([key, value]) => ({ name: statusLabels[key].label, value, color: statusLabels[key].color.replace('bg-', '') }))}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {Object.entries(statusCounts).map(([key, value], index) => {
+                    const colors = {
+                      lead: '#eab308',
+                      contacted: '#3b82f6',
+                      contracted: '#10b981',
+                      not_interested: '#ef4444',
+                      blacklisted: '#64748b'
+                    };
+                    return <Cell key={`cell-${index}`} fill={colors[key]} />;
+                  })}
+                </Pie>
+                <RechartsTooltip formatter={(value) => value.toLocaleString('tr-TR')} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

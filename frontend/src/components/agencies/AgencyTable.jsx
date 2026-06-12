@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Search, MapPin, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Send } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Send, Edit } from 'lucide-react';
 import AgencyDetailModal from './AgencyDetailModal';
 import BulkEmailModal from './BulkEmailModal';
+import BulkStatusModal from './BulkStatusModal';
 
 // A simple hook for copy to clipboard with feedback
 function useCopyToClipboard() {
@@ -30,11 +31,20 @@ function useCopyToClipboard() {
 }
 
 export default function AgencyTable({ data }) {
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [inputValue, setInputValue] = useState(''); // immediate UI state
+  const [globalFilter, setGlobalFilter] = useState(''); // debounced filter applied to table
   const [columnFilters, setColumnFilters] = useState([]);
   const [copiedText, copy] = useCopyToClipboard();
   const [selectedAgency, setSelectedAgency] = useState(null);
   const [isBulkEmailOpen, setIsBulkEmailOpen] = useState(false);
+  const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState({});
+
+  // Debounce: Apply filter to table 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => setGlobalFilter(inputValue), 300);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
 
   // Extract unique values for dropdowns
   const uniqueCities = useMemo(() => [...new Set(data.map(item => item.city).filter(Boolean))].sort(), [data]);
@@ -47,6 +57,28 @@ export default function AgencyTable({ data }) {
 
   const columns = useMemo(
     () => [
+      {
+        id: 'select',
+        size: 50,
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row }) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+              checked={row.getIsSelected()}
+              onChange={row.getToggleSelectedHandler()}
+            />
+          </div>
+        )
+      },
       {
         accessorKey: 'tursab_no',
         header: 'Belge No',
@@ -185,7 +217,10 @@ export default function AgencyTable({ data }) {
     state: {
       globalFilter,
       columnFilters,
+      rowSelection,
     },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -212,6 +247,7 @@ export default function AgencyTable({ data }) {
   });
 
   const clearFilters = () => {
+    setInputValue('');
     setGlobalFilter('');
     setColumnFilters([]);
   };
@@ -268,8 +304,20 @@ export default function AgencyTable({ data }) {
 
       {isBulkEmailOpen && (
         <BulkEmailModal 
-          recipients={rows.map(r => r.original)} 
+          recipients={Object.keys(rowSelection).length > 0 
+            ? table.getSelectedRowModel().rows.map(r => r.original)
+            : rows.map(r => r.original)} 
           onClose={() => setIsBulkEmailOpen(false)} 
+        />
+      )}
+
+      {isBulkStatusOpen && (
+        <BulkStatusModal
+          selectedAgencies={table.getSelectedRowModel().rows.map(r => r.original)}
+          onClose={() => {
+            setIsBulkStatusOpen(false);
+            setRowSelection({});
+          }}
         />
       )}
 
@@ -279,8 +327,8 @@ export default function AgencyTable({ data }) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
-              value={globalFilter ?? ''}
-              onChange={e => setGlobalFilter(e.target.value)}
+              value={inputValue ?? ''}
+              onChange={e => setInputValue(e.target.value)}
               className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-64 bg-white"
               placeholder="Acente Adı veya Belge No..."
             />
@@ -333,7 +381,7 @@ export default function AgencyTable({ data }) {
             <option value="blacklisted">Kara Liste</option>
           </select>
 
-          {(globalFilter || columnFilters.length > 0) && (
+          {(inputValue || columnFilters.length > 0) && (
             <button 
               onClick={clearFilters}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -344,13 +392,25 @@ export default function AgencyTable({ data }) {
           )}
 
           <div className="flex items-center gap-2 ml-auto">
+            {Object.keys(rowSelection).length > 0 && (
+              <button 
+                onClick={() => setIsBulkStatusOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors border border-amber-200"
+              >
+                <Edit className="w-4 h-4" />
+                <span className="hidden sm:inline">Toplu Durum ({Object.keys(rowSelection).length})</span>
+              </button>
+            )}
+
             <button 
               onClick={() => setIsBulkEmailOpen(true)}
               disabled={rows.length === 0}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">Toplu E-posta</span>
+              <span className="hidden sm:inline">
+                Toplu E-posta {Object.keys(rowSelection).length > 0 && `(${Object.keys(rowSelection).length})`}
+              </span>
             </button>
 
             <button 

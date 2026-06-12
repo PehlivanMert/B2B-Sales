@@ -24,13 +24,21 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
+    let unsubscribeSnapshot = null;
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      // Clean up previous user's snapshot listener before setting up a new one
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
       setCurrentUser(user);
-      
+
       if (user) {
         const userRef = doc(db, 'users', user.uid);
-        
-        // Ensure user exists
+
+        // Ensure user doc exists
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
           const newUser = {
@@ -42,28 +50,24 @@ export function AuthProvider({ children }) {
           };
           await setDoc(userRef, newUser);
         }
-        
-        // Listen to changes in real-time
-        const unsubscribeSnapshot = onSnapshot(userRef, (doc) => {
-          if (doc.exists()) {
-            setUserData(doc.data());
+
+        // Listen to user doc changes in real-time — store unsubscribe so we can clean up
+        unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setUserData(docSnap.data());
           }
         });
-        
-        // We need to clean up the snapshot listener when auth changes
-        // but useEffect cleanup only handles the main unsubscribe.
-        // We can attach it to the window or a ref, but for simplicity:
-        setLoading(false);
-        return () => {
-          unsubscribeSnapshot();
-        };
       } else {
         setUserData(null);
-        setLoading(false);
       }
+
+      setLoading(false);
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   const value = {

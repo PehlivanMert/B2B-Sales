@@ -12,6 +12,28 @@ export default function BulkEmailModal({ recipients, onClose }) {
   const [status, setStatus] = useState('idle'); // idle, sending, success, error
   const [errorMessage, setErrorMessage] = useState('');
   const [availableSenders, setAvailableSenders] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+
+  const EMAIL_TEMPLATES = [
+    {
+      id: 'template_1',
+      name: 'Tanışma / B2B Ortaklık Teklifi',
+      subject: 'B2B Ortaklığı Fırsatı',
+      message: 'Sayın Yetkili,\n\nKurumunuzla potansiyel işbirliklerimizi görüşmek isteriz.\nB2B acente portalımız üzerinden yüksek komisyon oranları ile çalışabilirsiniz.\n\nDetaylı bilgi için bize ulaşabilirsiniz.\n\nSaygılarımızla,'
+    },
+    {
+      id: 'template_2',
+      name: 'Erken Rezervasyon Kampanyası',
+      subject: '2026 Erken Rezervasyon Fırsatları Başladı!',
+      message: 'Değerli Acentemiz,\n\n2026 yılı erken rezervasyon kampanyamız başlamıştır.\nSistem üzerinden yeni fiyatları ve kontenjanları inceleyebilirsiniz.\n\nİyi çalışmalar dileriz.'
+    },
+    {
+      id: 'template_3',
+      name: 'Sistem Güncellemesi / Bilgilendirme',
+      subject: 'B2B Portal Güncellemesi Hakkında',
+      message: 'Değerli İş Ortağımız,\n\nB2B portalımızda sizlere daha iyi hizmet verebilmek adına altyapı güncellemesi yapılmıştır. Yeni özellikleri test edebilirsiniz.\n\nTeşekkürler.'
+    }
+  ];
 
   useEffect(() => {
     // Fetch configured senders from backend
@@ -190,7 +212,29 @@ export default function BulkEmailModal({ recipients, onClose }) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-slate-700 ml-1">E-posta Konusu</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-700 ml-1">E-posta Konusu</label>
+                    <select
+                      value={selectedTemplate}
+                      onChange={(e) => {
+                        const tplId = e.target.value;
+                        setSelectedTemplate(tplId);
+                        if (tplId) {
+                          const tpl = EMAIL_TEMPLATES.find(t => t.id === tplId);
+                          if (tpl) {
+                            setSubject(tpl.subject);
+                            setMessage(tpl.message);
+                          }
+                        }
+                      }}
+                      className="text-xs bg-slate-50 border border-slate-200 text-slate-600 rounded-lg px-2 py-1 focus:outline-none"
+                    >
+                      <option value="">Şablon Seçin...</option>
+                      {EMAIL_TEMPLATES.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
                   <input
                     type="text"
                     required

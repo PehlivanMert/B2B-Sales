@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCrm } from '../../context/CrmContext';
+import { useAgencies } from '../../context/AgenciesContext';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Loader2, Navigation, MapPin, X } from 'lucide-react';
@@ -32,8 +33,8 @@ const SelectedIcon = L.icon({
 
 export default function MapPage() {
   const { crmData } = useCrm();
-  const [baseAgencies, setBaseAgencies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { agencies: baseAgencies, agenciesLoading } = useAgencies();
+  const loading = agenciesLoading;
   
   // Filters
   const [cityFilter, setCityFilter] = useState('');
@@ -42,27 +43,8 @@ export default function MapPage() {
   // Selected agencies for routing
   const [selectedAgencies, setSelectedAgencies] = useState([]);
 
-  // 1. Fetch static JSON data
-  useEffect(() => {
-    async function fetchBaseData() {
-      try {
-        setLoading(true);
-        const res = await fetch('/agencies.json?t=' + new Date().getTime());
-        if (!res.ok) throw new Error('Acente verisi bulunamadı');
-        const data = await res.json();
-        
-        // Sadece koordinatı olanları al
-        const withCoords = data.filter(a => a.lat && a.lng);
-        setBaseAgencies(withCoords);
-      } catch (err) {
-        console.error('Error fetching static agencies:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchBaseData();
-  }, []);
-
+  // Status filter
+  const [statusFilter, setStatusFilter] = useState('');
 
   // 3. Merge Base Data + CRM Data
   const agencies = useMemo(() => {
@@ -80,14 +62,19 @@ export default function MapPage() {
     return [...new Set(agencies.filter(a => a.city === cityFilter).map(a => a.district))].sort();
   }, [agencies, cityFilter]);
 
-  // Filtered agencies to show on map
+  // Filtered agencies to show on map (only agencies with coords)
   const filteredAgencies = useMemo(() => {
     return agencies.filter(a => {
+      if (!a.lat || !a.lng) return false;
       if (cityFilter && a.city !== cityFilter) return false;
       if (districtFilter && a.district !== districtFilter) return false;
+      if (statusFilter) {
+        const agencyStatus = a.status || 'lead';
+        if (agencyStatus !== statusFilter) return false;
+      }
       return true;
     });
-  }, [agencies, cityFilter, districtFilter]);
+  }, [agencies, cityFilter, districtFilter, statusFilter]);
 
   const toggleSelection = (agency) => {
     setSelectedAgencies(prev => {
@@ -96,7 +83,7 @@ export default function MapPage() {
       
       // Limit to 10 waypoints for Google Maps
       if (prev.length >= 10) {
-        alert("Google Maps tek seferde en fazla 10 durak destekler.");
+        // Max 10 waypoints
         return prev;
       }
       return [...prev, agency];
@@ -161,59 +148,70 @@ export default function MapPage() {
             <option value="">Tüm İlçeler</option>
             {uniqueDistricts.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-w-[150px] shadow-sm"
+          >
+            <option value="">Tüm Durumlar</option>
+            <option value="lead">Potansiyel</option>
+            <option value="contacted">İletişime Geçildi</option>
+            <option value="contracted">Sözleşmeli</option>
+            <option value="not_interested">İlgilenmiyor</option>
+            <option value="blacklisted">Kara Liste</option>
+          </select>
         </div>
       </div>
 
-      <div className="flex-1 flex gap-6 min-h-0">
+      <div className="flex-1 relative min-h-0 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden z-0">
         {/* Map Container */}
-        <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden relative z-0">
-          <MapContainer 
-            center={[39.0, 35.0]} 
-            zoom={6} 
-            className="w-full h-full"
-            maxZoom={18}
+        <MapContainer 
+          center={[39.0, 35.0]} 
+          zoom={6} 
+          className="w-full h-full"
+          maxZoom={18}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          />
+          <MarkerClusterGroup
+            chunkedLoading
+            maxClusterRadius={50}
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            />
-            <MarkerClusterGroup
-              chunkedLoading
-              maxClusterRadius={50}
-            >
-              {filteredAgencies.map((agency) => {
-                const isSelected = selectedAgencies.some(p => p.docId === agency.docId);
-                return (
-                  <Marker 
-                    key={agency.docId} 
-                    position={[agency.lat, agency.lng]}
-                    icon={isSelected ? SelectedIcon : DefaultIcon}
-                  >
-                    <Popup className="rounded-xl">
-                      <div className="p-1 min-w-[200px]">
-                        <h3 className="font-bold text-slate-800 mb-1 leading-tight">{agency.name}</h3>
-                        <p className="text-xs text-slate-500 mb-3">{agency.address}</p>
-                        <button
-                          onClick={() => toggleSelection(agency)}
-                          className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors ${
-                            isSelected 
-                              ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                          }`}
-                        >
-                          {isSelected ? 'Rotadan Çıkar' : 'Rotaya Ekle'}
-                        </button>
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
-            </MarkerClusterGroup>
-          </MapContainer>
-        </div>
+            {filteredAgencies.map((agency) => {
+              const isSelected = selectedAgencies.some(p => p.docId === agency.docId);
+              return (
+                <Marker 
+                  key={agency.docId} 
+                  position={[agency.lat, agency.lng]}
+                  icon={isSelected ? SelectedIcon : DefaultIcon}
+                >
+                  <Popup className="rounded-xl">
+                    <div className="p-1 min-w-[200px]">
+                      <h3 className="font-bold text-slate-800 mb-1 leading-tight">{agency.name}</h3>
+                      <p className="text-xs text-slate-500 mb-3">{agency.address}</p>
+                      <button
+                        onClick={() => toggleSelection(agency)}
+                        className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold transition-colors ${
+                          isSelected 
+                            ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                        }`}
+                      >
+                        {isSelected ? 'Rotadan Çıkar' : 'Rotaya Ekle'}
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MarkerClusterGroup>
+        </MapContainer>
 
-        {/* Selected Route Sidebar */}
-        <div className="w-80 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full">
+        {/* Selected Route Sidebar Overlay */}
+        <div className="absolute right-4 top-4 bottom-4 w-80 bg-white/95 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col z-[1000]">
           <div className="p-4 border-b border-slate-200 bg-slate-50/50 rounded-t-2xl">
             <h3 className="font-semibold text-slate-800 flex items-center gap-2">
               <Navigation className="w-4 h-4 text-blue-600" />
