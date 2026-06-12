@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Send, Mail, Users, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -11,6 +11,20 @@ export default function BulkEmailModal({ recipients, onClose }) {
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('idle'); // idle, sending, success, error
   const [errorMessage, setErrorMessage] = useState('');
+  const [availableSenders, setAvailableSenders] = useState([]);
+
+  useEffect(() => {
+    // Fetch configured senders from backend
+    fetch('http://localhost:3001/api/senders')
+      .then(res => res.json())
+      .then(data => {
+        if (data.senders && data.senders.length > 0) {
+          setAvailableSenders(data.senders);
+          setSenderAccount(data.senders[0]); // Set default to the first one
+        }
+      })
+      .catch(err => console.error("Senders fetch error:", err));
+  }, []);
 
   // Extract valid emails
   const validRecipients = recipients.filter(r => r.email && r.email.includes('@'));
@@ -112,7 +126,7 @@ export default function BulkEmailModal({ recipients, onClose }) {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-slate-800">Toplu E-posta Gönderimi</h2>
-                <p className="text-sm text-slate-500">Resend API Entegrasyonu</p>
+                <p className="text-sm text-slate-500">Kurumsal SMTP E-Posta Sunucusu</p>
               </div>
             </div>
             <button 
@@ -132,7 +146,7 @@ export default function BulkEmailModal({ recipients, onClose }) {
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 mb-2">Kampanya Başarıyla Gönderildi!</h3>
                 <p className="text-slate-500 max-w-sm">
-                  {validRecipients.length} acenteye e-postalarınız Resend üzerinden sıraya alındı.
+                  {validRecipients.length} acenteye e-postalarınız kurumsal SMTP sunucunuz üzerinden gönderildi.
                 </p>
               </div>
             ) : (
@@ -165,10 +179,13 @@ export default function BulkEmailModal({ recipients, onClose }) {
                     disabled={status === 'sending'}
                     className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-60"
                   >
-                    <option value="info@b2b-crm.com">info@b2b-crm.com</option>
-                    <option value="sales@b2b-crm.com">sales@b2b-crm.com</option>
-                    <option value="marketing@b2b-crm.com">marketing@b2b-crm.com</option>
-                    <option value={currentUser?.email}>{currentUser?.email} (Kişisel)</option>
+                    {availableSenders.length > 0 ? (
+                      availableSenders.map(sender => (
+                        <option key={sender} value={sender}>{sender}</option>
+                      ))
+                    ) : (
+                      <option value="">Lütfen backend/.env dosyasını ayarlayın</option>
+                    )}
                   </select>
                 </div>
 
