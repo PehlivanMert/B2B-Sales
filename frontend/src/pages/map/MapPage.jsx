@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -32,7 +32,8 @@ const SelectedIcon = L.icon({
 });
 
 export default function MapPage() {
-  const [agencies, setAgencies] = useState([]);
+  const [baseAgencies, setBaseAgencies] = useState([]);
+  const [crmData, setCrmData] = useState({});
   const [loading, setLoading] = useState(true);
   
   // Filters
@@ -42,27 +43,54 @@ export default function MapPage() {
   // Selected agencies for routing
   const [selectedAgencies, setSelectedAgencies] = useState([]);
 
+  // 1. Fetch static JSON data
   useEffect(() => {
-    async function fetchAgencies() {
+    async function fetchBaseData() {
       try {
         setLoading(true);
-        const querySnapshot = await getDocs(collection(db, 'agencies'));
-        const fetchedAgencies = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.lat && data.lng) {
-            fetchedAgencies.push({ ...data, docId: doc.id });
-          }
-        });
-        setAgencies(fetchedAgencies);
+        const res = await fetch('/agencies.json?t=' + new Date().getTime());
+        if (!res.ok) throw new Error('Acente verisi bulunamadı');
+        const data = await res.json();
+        
+        // Sadece koordinatı olanları al
+        const withCoords = data.filter(a => a.lat && a.lng);
+        setBaseAgencies(withCoords);
       } catch (err) {
-        console.error('Error fetching agencies:', err);
+        console.error('Error fetching static agencies:', err);
       } finally {
         setLoading(false);
       }
     }
-    fetchAgencies();
+    fetchBaseData();
   }, []);
+
+  // 2. Listen to CRM changes
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'agency_crm'),
+      (snapshot) => {
+        const crmUpdates = {};
+        snapshot.forEach((doc) => {
+          crmUpdates[doc.id] = doc.data();
+        });
+        setCrmData(crmUpdates);
+      },
+      (err) => {
+        console.error('Error fetching CRM data:', err);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Merge Base Data + CRM Data
+  const agencies = useMemo(() => {
+    if (!baseAgencies.length) return [];
+    return baseAgencies.map(agency => ({
+      ...agency,
+      ...(crmData[agency.docId] || {})
+    }));
+  }, [baseAgencies, crmData]);
 
   // Compute unique cities & districts
   const uniqueCities = useMemo(() => [...new Set(agencies.map(a => a.city))].sort(), [agencies]);

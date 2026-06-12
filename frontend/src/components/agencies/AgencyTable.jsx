@@ -35,9 +35,6 @@ export default function AgencyTable({ data }) {
   const [copiedText, copy] = useCopyToClipboard();
   const [selectedAgency, setSelectedAgency] = useState(null);
   const [isBulkEmailOpen, setIsBulkEmailOpen] = useState(false);
-  
-  // Local state to optimistic update status without refetching 17k rows
-  const [localStatuses, setLocalStatuses] = useState({});
 
   // Extract unique values for dropdowns
   const uniqueCities = useMemo(() => [...new Set(data.map(item => item.city).filter(Boolean))].sort(), [data]);
@@ -61,8 +58,6 @@ export default function AgencyTable({ data }) {
         header: 'Acente Adı',
         size: 300,
         cell: info => {
-          const status = localStatuses[info.row.original.docId] || info.row.original.status || 'lead';
-          const isContracted = status === 'contracted';
           return (
             <div className="flex items-center gap-2">
               <span className="font-medium truncate block max-w-[230px]" title={info.getValue()}>
@@ -73,13 +68,33 @@ export default function AgencyTable({ data }) {
                   AKTİF
                 </span>
               )}
-              {isContracted && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 shrink-0">
-                  SÖZLEŞMELİ
-                </span>
-              )}
             </div>
           );
+        }
+      },
+      {
+        accessorKey: 'status',
+        header: 'Durum',
+        size: 130,
+        filterFn: (row, columnId, filterValue) => {
+          const val = row.getValue(columnId) || 'lead';
+          return val === filterValue;
+        },
+        cell: info => {
+          const status = info.getValue() || 'lead';
+          if (status === 'contracted') {
+            return <span className="px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">Sözleşmeli</span>;
+          }
+          if (status === 'contacted') {
+            return <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">İletişime Geçildi</span>;
+          }
+          if (status === 'not_interested') {
+            return <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">İlgilenmiyor</span>;
+          }
+          if (status === 'blacklisted') {
+            return <span className="px-2 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700 border border-slate-300">Kara Liste</span>;
+          }
+          return <span className="px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">Potansiyel</span>;
         }
       },
       {
@@ -226,8 +241,6 @@ export default function AgencyTable({ data }) {
   };
 
   const handleUpdateStatus = (docId, newStatus) => {
-    setLocalStatuses(prev => ({ ...prev, [docId]: newStatus }));
-    
     // Also update selected agency if it's currently open
     if (selectedAgency && selectedAgency.docId === docId) {
       setSelectedAgency({ ...selectedAgency, status: newStatus });
@@ -298,6 +311,19 @@ export default function AgencyTable({ data }) {
             ))}
           </select>
 
+          <select
+            value={table.getColumn('status')?.getFilterValue() ?? ''}
+            onChange={e => table.getColumn('status')?.setFilterValue(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 bg-white min-w-[150px]"
+          >
+            <option value="">Tüm Durumlar</option>
+            <option value="lead">Potansiyel</option>
+            <option value="contacted">İletişime Geçildi</option>
+            <option value="contracted">Sözleşmeli</option>
+            <option value="not_interested">İlgilenmiyor</option>
+            <option value="blacklisted">Kara Liste</option>
+          </select>
+
           {(globalFilter || columnFilters.length > 0) && (
             <button 
               onClick={clearFilters}
@@ -342,11 +368,11 @@ export default function AgencyTable({ data }) {
         <table className="w-full text-left border-collapse table-fixed">
           <thead className="sticky top-0 bg-slate-100 z-10 shadow-sm">
             {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
+              <tr key={headerGroup.id} className="flex w-full">
                 {headerGroup.headers.map(header => (
                   <th 
                     key={header.id} 
-                    className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200"
+                    className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 flex items-center"
                     style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder
@@ -379,15 +405,17 @@ export default function AgencyTable({ data }) {
                   {row.getVisibleCells().map(cell => (
                     <td 
                       key={cell.id} 
-                      className="px-4 py-2 flex items-center text-sm text-slate-600 border-b border-transparent group-hover:border-blue-100"
+                      className="px-4 py-2 flex items-center text-sm text-slate-600 border-b border-transparent group-hover:border-blue-100 overflow-hidden"
                       style={{ width: cell.column.getSize() }}
                     >
                       {cell.column.id === 'actions' ? (
-                        <div onClick={e => e.stopPropagation()}>
+                        <div onClick={e => e.stopPropagation()} className="w-full">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </div>
                       ) : (
-                        flexRender(cell.column.columnDef.cell, cell.getContext())
+                        <div className="w-full truncate">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
                       )}
                     </td>
                   ))}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, MapPin, Phone, Mail, Building2, Calendar, FileText, Send, CheckCircle2, AlertCircle, XCircle, Trash2 } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -71,8 +71,9 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
     
     try {
       setIsStatusUpdating(true);
-      const agencyRef = doc(db, 'agencies', agency.docId);
-      await updateDoc(agencyRef, { status: newStatus });
+      const agencyRef = doc(db, 'agency_crm', agency.docId);
+      // Use setDoc with merge: true so we don't overwrite other CRM data like notes array
+      await setDoc(agencyRef, { status: newStatus }, { merge: true });
       // Notify parent to update local state if needed
       if(onUpdateStatus) {
         onUpdateStatus(agency.docId, newStatus);

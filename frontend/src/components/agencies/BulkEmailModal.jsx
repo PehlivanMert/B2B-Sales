@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Send, Mail, Users, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -38,6 +38,23 @@ export default function BulkEmailModal({ recipients, onClose }) {
       const data = await response.json();
       if (!data.success) throw new Error(data.error || 'Mail gönderilemedi.');
 
+      // Update CRM status and add note for all valid recipients
+      const promises = validRecipients.map(async (agency) => {
+        // 1. Update status to 'contacted'
+        await setDoc(doc(db, 'agency_crm', agency.docId), { status: 'contacted' }, { merge: true });
+        
+        // 2. Add system note
+        await addDoc(collection(db, 'agencies', agency.docId, 'notes'), {
+          text: `[Sistem] Toplu E-posta Kampanyası gönderildi.\nKonu: ${subject}`,
+          createdAt: serverTimestamp(),
+          authorEmail: senderAccount,
+          authorName: 'Sistem (Otomatik)',
+          authorId: currentUser?.uid || 'system'
+        });
+      });
+
+      await Promise.all(promises);
+
       // Log to campaigns history
       await addDoc(collection(db, 'campaigns'), {
         sender: senderAccount,
@@ -47,6 +64,16 @@ export default function BulkEmailModal({ recipients, onClose }) {
         message,
         recipientCount: validRecipients.length,
         sentAt: serverTimestamp()
+      });
+
+      // Create Notification for the user
+      await addDoc(collection(db, 'notifications'), {
+        userId: currentUser?.uid,
+        title: 'Toplu E-posta Tamamlandı',
+        message: `${validRecipients.length} acenteye başarıyla mail gönderildi. (Konu: ${subject})`,
+        type: 'success',
+        isRead: false,
+        createdAt: serverTimestamp()
       });
 
       // Mocking a successful send

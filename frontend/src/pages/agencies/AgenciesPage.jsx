@@ -1,41 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import AgencyTable from '../../components/agencies/AgencyTable';
 import { Loader2 } from 'lucide-react';
 
 export default function AgenciesPage() {
-  const [agencies, setAgencies] = useState([]);
+  const [baseAgencies, setBaseAgencies] = useState([]);
+  const [crmData, setCrmData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // 1. Fetch static JSON data
   useEffect(() => {
-    async function fetchAgencies() {
+    async function fetchBaseData() {
       try {
         setLoading(true);
-        // We fetch all agencies for client-side filtering and virtualized display
-        // Since there are ~17k docs, this takes one big read initially.
-        // In a real prod environment we might want to store this as a compressed JSON 
-        // in Firebase Storage to save reads, but Firestore can handle this easily for internal usage.
-        const q = query(collection(db, 'agencies'), orderBy('id', 'asc'));
-        const querySnapshot = await getDocs(q);
-        
-        const fetchedAgencies = [];
-        querySnapshot.forEach((doc) => {
-          fetchedAgencies.push({ ...doc.data(), docId: doc.id });
-        });
-        
-        setAgencies(fetchedAgencies);
+        // Zero-read cost static fetch
+        const res = await fetch('/agencies.json');
+        if (!res.ok) throw new Error('Acente verisi bulunamadı');
+        const data = await res.json();
+        setBaseAgencies(data);
       } catch (err) {
-        console.error('Error fetching agencies:', err);
-        setError('Veriler yüklenirken bir hata oluştu. Lütfen Firebase bağlantınızı kontrol edin.');
+        console.error('Error fetching static agencies:', err);
+        setError('Acente verileri yüklenirken hata oluştu.');
       } finally {
         setLoading(false);
       }
     }
-
-    fetchAgencies();
+    fetchBaseData();
   }, []);
+
+  // 2. Listen to CRM changes
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'agency_crm'),
+      (snapshot) => {
+        const crmUpdates = {};
+        snapshot.forEach((doc) => {
+          crmUpdates[doc.id] = doc.data();
+        });
+        setCrmData(crmUpdates);
+      },
+      (err) => {
+        console.error('Error fetching CRM data:', err);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Merge Base Data + CRM Data
+  const agencies = React.useMemo(() => {
+    if (!baseAgencies.length) return [];
+    return baseAgencies.map(agency => ({
+      ...agency,
+      ...(crmData[agency.docId] || {})
+    }));
+  }, [baseAgencies, crmData]);
 
   if (loading) {
     return (

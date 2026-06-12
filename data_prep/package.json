@@ -1,0 +1,16 @@
+{
+  "name": "data_prep",
+  "version": "1.0.0",
+  "description": "",
+  "main": "fix_districts_local.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "turkey-location-data": "^1.1.1",
+    "turkey-neighbourhoods": "^4.0.3"
+  }
+}

@@ -44,8 +44,10 @@ The `agencies_cache.db` (SQLite) file holds all the data. The `scrape_agencies_l
 The existing SQLite database is migrated to Firebase Firestore to power a Vite + React-based internal CRM.
 
 **Core Features:**
-* **Virtualized Data Grid**: A lightning-fast table handling 17,000+ records seamlessly using `TanStack Virtual`.
-* **Field Operations Map**: An interactive map view using `react-leaflet` to display agencies and generate Google Maps routing for field visits.
+* **Virtualized Data Grid**: A lightning-fast table handling 17,000+ records seamlessly using `TanStack Virtual`. Includes precise alignment and multi-criteria filtering (status, city, district).
+* **Smart Address Parsing**: Implements an advanced script that matches agency address strings against a comprehensive dataset of all Turkish cities and districts to reliably extract location data automatically.
+* **Field Operations Map**: An interactive map view using `react-leaflet` to display agencies directly from a zero-read-cost static JSON strategy and generate Google Maps routing for field visits.
 * **CRM Notes & Status Management**: Firestore sub-collections allowing sales teams to log their interactions and update lead statuses.
+* **Campaign History Management**: Track all bulk email campaigns, with abilities to search past campaigns by subject/sender and delete outdated campaign records directly from the UI.
 * **Automation**: Monthly automated Github Actions workflows to scrape delta updates and keep the platform synchronized at zero cost.
 * **Quick Actions**: WhatsApp chat generation, quick copy utilities, and bulk email campaigns via Resend API.
