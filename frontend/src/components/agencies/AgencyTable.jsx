@@ -154,13 +154,22 @@ export default function AgencyTable({ data }) {
                 </>
               )}
               {email && (
-                <button 
-                  onClick={() => copy(email)}
-                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                  title="E-postayı Kopyala"
-                >
-                  {copiedText === email ? <Check className="w-4 h-4 text-emerald-500" /> : <Mail className="w-4 h-4" />}
-                </button>
+                <>
+                  <a 
+                    href={`mailto:${email}`}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title="E-posta Gönder (Mailto)"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </a>
+                  <button 
+                    onClick={() => copy(email)}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title="E-postayı Kopyala"
+                  >
+                    {copiedText === email ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </>
               )}
             </div>
           );

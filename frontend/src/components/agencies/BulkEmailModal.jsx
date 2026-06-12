@@ -30,8 +30,7 @@ export default function BulkEmailModal({ recipients, onClose }) {
           sender: senderAccount,
           subject,
           message,
-          recipientCount: validRecipients.length,
-          targetEmail: 'pehlivanmert@outlook.com.tr'
+          bccList: validRecipients.map(r => r.email)
         })
       });
 
@@ -89,6 +88,14 @@ export default function BulkEmailModal({ recipients, onClose }) {
       setStatus('error');
       setErrorMessage('E-postalar gönderilirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
+  };
+
+  const handleMailto = () => {
+    if (validRecipients.length === 0 || !subject || !message) return;
+    const bccEmails = validRecipients.map(r => r.email).join(',');
+    const mailtoUrl = `mailto:?bcc=${encodeURIComponent(bccEmails)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+    window.location.href = mailtoUrl;
+    onClose();
   };
 
   return (
@@ -204,6 +211,15 @@ export default function BulkEmailModal({ recipients, onClose }) {
                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
               >
                 İptal Et
+              </button>
+              <button
+                type="button"
+                onClick={handleMailto}
+                disabled={validRecipients.length === 0 || status === 'sending'}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+              >
+                <Mail className="w-4 h-4" />
+                Yerel E-Posta (Mailto)
               </button>
               <button
                 type="submit"

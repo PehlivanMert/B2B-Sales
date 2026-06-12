@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
@@ -7,23 +8,22 @@ app.use(cors());
 app.use(express.json());
 
 // Set up Nodemailer transport.
-// We use Ethereal as a default fake SMTP since we don't have real credentials.
-// Ethereal will generate a URL to view the email.
 async function getTransporter() {
-  // If you want real emails to pehlivanmert@outlook.com.tr, uncomment below and add your Outlook credentials:
-  /*
-  return nodemailer.createTransport({
-    host: "smtp-mail.outlook.com",
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: "YOUR_EMAIL@outlook.com",
-      pass: "YOUR_PASSWORD"
-    }
-  });
-  */
+  // If SMTP settings are provided in .env, use them
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  }
 
-  // Ethereal test account (Fallback for testing without credentials)
+  // Fallback to Ethereal test account if no .env config
+  console.log("UYARI: .env dosyasında SMTP ayarları bulunamadı. Ethereal test hesabı kullanılıyor.");
   let testAccount = await nodemailer.createTestAccount();
   return nodemailer.createTransport({
     host: "smtp.ethereal.email",
@@ -37,20 +37,22 @@ async function getTransporter() {
 }
 
 app.post('/api/send-email', async (req, res) => {
-  const { sender, subject, message, recipientCount, targetEmail } = req.body;
+  const { sender, subject, message, bccList, targetEmail } = req.body;
 
   try {
     const transporter = await getTransporter();
 
-    // Determine the 'to' address. For real mass email, it would be bcc or loop over recipients.
-    // For this test, we just send one to the user's specific test address.
-    const toAddress = targetEmail || "pehlivanmert@outlook.com.tr";
+    // Use bccList if provided (for bulk emails), otherwise fallback to targetEmail (for backward compatibility/testing)
+    const bccAddresses = Array.isArray(bccList) && bccList.length > 0 ? bccList : [];
+    const toAddress = bccAddresses.length > 0 ? undefined : (targetEmail || "pehlivanmert@outlook.com.tr");
 
     let info = await transporter.sendMail({
       from: `"${sender}" <${sender}>`, 
       to: toAddress, 
+      bcc: bccAddresses.length > 0 ? bccAddresses : undefined,
       subject: subject, 
-      text: `${message}\n\n---\nBu mail ${recipientCount} acenteye gönderilmiş gibi test edilmiştir.`,
+      text: message,
+      html: message.replace(/\n/g, '<br>')
     });
 
     console.log("Message sent: %s", info.messageId);
