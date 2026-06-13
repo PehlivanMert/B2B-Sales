@@ -19,21 +19,27 @@ export default function BulkEmailModal({ recipients, onClose }) {
   const EMAIL_TEMPLATES = [
     {
       id: 'template_1',
-      name: 'Tanışma / B2B Ortaklık Teklifi',
-      subject: 'B2B Ortaklığı Fırsatı',
-      message: 'Sayın Yetkili,\n\nKurumunuzla potansiyel işbirliklerimizi görüşmek isteriz.\nB2B acente portalımız üzerinden yüksek komisyon oranları ile çalışabilirsiniz.\n\nDetaylı bilgi için bize ulaşabilirsiniz.\n\nSaygılarımızla,'
+      name: 'Profesyonel Tanışma & B2B Ortaklık',
+      subject: 'Kurumsal İşbirliği ve B2B Acente Fırsatları',
+      message: 'Sayın Yetkili,\n\nKurumunuzla potansiyel işbirliklerimizi değerlendirmek ve B2B ağımızda yer almanızın sağlayacağı avantajları paylaşmak isteriz.\n\nGelişmiş B2B portalımız üzerinden yüksek komisyon oranları ve size özel tahsis edilen kontenjanlarla çalışabilirsiniz.\n\nDetaylı sistem sunumu için bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,'
     },
     {
       id: 'template_2',
-      name: 'Erken Rezervasyon Kampanyası',
-      subject: '2026 Erken Rezervasyon Fırsatları Başladı!',
-      message: 'Değerli Acentemiz,\n\n2026 yılı erken rezervasyon kampanyamız başlamıştır.\nSistem üzerinden yeni fiyatları ve kontenjanları inceleyebilirsiniz.\n\nİyi çalışmalar dileriz.'
+      name: 'Profesyonel Erken Rezervasyon Kampanyası',
+      subject: '2026 Erken Rezervasyon Özel Teklifleri',
+      message: 'Değerli İş Ortağımız,\n\n2026 yılı erken rezervasyon dönemimiz özel indirimler ve acentelere özel avantajlarla başlamıştır.\n\nSistemimiz üzerinden güncel fiyatları, yeni eklenen tesisleri ve özel fırsatları hemen inceleyebilir, misafirlerinize sunabilirsiniz.\n\nBol kazançlı bir sezon dileriz.'
     },
     {
       id: 'template_3',
-      name: 'Sistem Güncellemesi / Bilgilendirme',
-      subject: 'B2B Portal Güncellemesi Hakkında',
-      message: 'Değerli İş Ortağımız,\n\nB2B portalımızda sizlere daha iyi hizmet verebilmek adına altyapı güncellemesi yapılmıştır. Yeni özellikleri test edebilirsiniz.\n\nTeşekkürler.'
+      name: 'Profesyonel Premium & VIP Hizmetler',
+      subject: 'VIP Transfer ve Lüks Konaklama Paketleri',
+      message: 'Değerli Acentemiz,\n\nPremium misafirleriniz için özel olarak hazırladığımız VIP transfer ve lüks konaklama paketlerimiz güncellenmiştir.\n\nMisafir memnuniyetini en üst düzeye çıkarmak için tasarlanan yeni ayrıcalıklarımızı B2B sistemimizde bulabilirsiniz.\n\nİyi çalışmalar dileriz.'
+    },
+    {
+      id: 'template_4',
+      name: 'Profesyonel Sistem Güncellemesi',
+      subject: 'B2B Portal Altyapı ve Özellik Güncellemesi',
+      message: 'Değerli İş Ortağımız,\n\nSizlere daha hızlı ve kesintisiz hizmet verebilmek adına B2B portalımızda önemli altyapı güncellemeleri tamamlanmıştır.\n\nYeni eklenen gelişmiş raporlama ve anında rezervasyon onay modüllerini sisteminize giriş yaparak test edebilirsiniz.\n\nTeşekkür ederiz.'
     }
   ];
 
