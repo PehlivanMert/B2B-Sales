@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Search, MapPin, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Send, Edit } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Search, MapPin, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Send, Edit, ChevronDown, Upload } from 'lucide-react';
 import AgencyDetailModal from './AgencyDetailModal';
 import BulkEmailModal from './BulkEmailModal';
 import BulkStatusModal from './BulkStatusModal';
+import ImportModal from './ImportModal';
 
 // A simple hook for copy to clipboard with feedback
 function useCopyToClipboard() {
@@ -38,6 +40,8 @@ export default function AgencyTable({ data }) {
   const [selectedAgency, setSelectedAgency] = useState(null);
   const [isBulkEmailOpen, setIsBulkEmailOpen] = useState(false);
   const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
 
   // Debounce: Apply filter to table 300ms after user stops typing
@@ -252,37 +256,67 @@ export default function AgencyTable({ data }) {
     setColumnFilters([]);
   };
 
-  const handleExportCSV = () => {
-    if (rows.length === 0) return;
+  const handleExportExcel = (filterType) => {
+    if (data.length === 0) return;
+    setIsExportMenuOpen(false);
     
-    // Define headers
-    const headers = ['Belge No', 'Acente Adı', 'Şehir', 'İlçe', 'BTK', 'Telefon', 'E-posta'];
-    
-    // Map data
-    const csvData = rows.map(row => {
-      const { tursab_no, name, city, district, btk, phone, email } = row.original;
-      return [
-        tursab_no || '',
-        `"${(name || '').replace(/"/g, '""')}"`,
-        `"${(city || '').replace(/"/g, '""')}"`,
-        `"${(district || '').replace(/"/g, '""')}"`,
-        `"${(btk || '').replace(/"/g, '""')}"`,
-        `"${(phone || '').replace(/"/g, '""')}"`,
-        `"${(email || '').replace(/"/g, '""')}"`
-      ].join(',');
-    });
-    
-    const csvContent = [headers.join(','), ...csvData].join('\n');
-    
-    // Add BOM for Excel UTF-8 support
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Acente_Listesi_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Filtreleme
+    let exportData = [];
+    if (filterType === 'all_visible') {
+      exportData = rows.map(r => r.original);
+    } else {
+      // Specific status export (ignoring current table filters, exporting from all data)
+      exportData = data.filter(a => (a.status || 'lead') === filterType);
+    }
+
+    if (exportData.length === 0) {
+      alert("Dışa aktarılacak kayıt bulunamadı.");
+      return;
+    }
+
+    // 1. Liste Sayfası
+    const sheetData = exportData.map(agency => ({
+      'Belge No': agency.tursab_no || '',
+      'Acente Adı': agency.name || '',
+      'Durum': agency.status === 'contracted' ? 'Sözleşmeli' :
+               agency.status === 'contacted' ? 'İletişime Geçildi' :
+               agency.status === 'not_interested' ? 'İlgilenmiyor' :
+               agency.status === 'blacklisted' ? 'Kara Liste' : 'Potansiyel',
+      'Şehir': agency.city || '',
+      'İlçe': agency.district || '',
+      'Telefon': agency.phone || '',
+      'E-posta': agency.email || '',
+      'Adres': agency.address || '',
+      'BTK': agency.btk || ''
+    }));
+
+    // 2. Özet İstatistikler Sayfası
+    const stats = {
+      'Toplam Kayıt': exportData.length,
+      'Sözleşmeli': exportData.filter(a => a.status === 'contracted').length,
+      'İletişime Geçildi': exportData.filter(a => a.status === 'contacted').length,
+      'Potansiyel': exportData.filter(a => !a.status || a.status === 'lead').length,
+      'İlgilenmiyor': exportData.filter(a => a.status === 'not_interested').length,
+      'Kara Liste': exportData.filter(a => a.status === 'blacklisted').length,
+    };
+    const statsData = Object.entries(stats).map(([Metrik, Değer]) => ({ Metrik, Değer }));
+
+    // Workbook oluştur
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(sheetData);
+    const ws2 = XLSX.utils.json_to_sheet(statsData);
+
+    // Sütun genişlikleri (Sheet 1)
+    ws1['!cols'] = [
+      { wch: 10 }, { wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+      { wch: 15 }, { wch: 25 }, { wch: 50 }, { wch: 20 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws1, "Acente Listesi");
+    XLSX.utils.book_append_sheet(wb, ws2, "İstatistikler");
+
+    // İndir
+    XLSX.writeFile(wb, `Acente_Listesi_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const handleUpdateStatus = (docId, newStatus) => {
@@ -318,6 +352,17 @@ export default function AgencyTable({ data }) {
             setIsBulkStatusOpen(false);
             setRowSelection({});
           }}
+        />
+      )}
+
+      {isImportModalOpen && (
+        <ImportModal
+          agenciesMap={useMemo(() => {
+            const map = {};
+            data.forEach(a => { if (a.tursab_no) map[String(a.tursab_no)] = a.docId; });
+            return map;
+          }, [data])}
+          onClose={() => setIsImportModalOpen(false)}
         />
       )}
 
@@ -414,13 +459,45 @@ export default function AgencyTable({ data }) {
             </button>
 
             <button 
-              onClick={handleExportCSV}
-              disabled={rows.length === 0}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
             >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Excel'e Aktar (CSV)</span>
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">İçe Aktar</span>
             </button>
+
+            <div className="relative">
+              <button 
+                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                disabled={data.length === 0}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Excel'e Aktar</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {isExportMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsExportMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                    <button onClick={() => handleExportExcel('all_visible')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                      Tüm Görünür Kayıtlar ({rows.length})
+                    </button>
+                    <div className="h-px bg-slate-100 my-1" />
+                    <button onClick={() => handleExportExcel('contracted')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                      Sadece Sözleşmeliler
+                    </button>
+                    <button onClick={() => handleExportExcel('lead')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                      Sadece Potansiyeller
+                    </button>
+                    <button onClick={() => handleExportExcel('contacted')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                      Sadece İletişime Geçilenler
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
         

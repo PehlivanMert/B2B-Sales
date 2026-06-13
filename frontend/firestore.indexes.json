@@ -1,0 +1,15 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "agency_crm",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lastUpdatedAt",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

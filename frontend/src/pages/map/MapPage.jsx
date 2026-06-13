@@ -42,6 +42,7 @@ export default function MapPage() {
   
   // Selected agencies for routing
   const [selectedAgencies, setSelectedAgencies] = useState([]);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
   // Status filter
   const [statusFilter, setStatusFilter] = useState('');
@@ -105,6 +106,36 @@ export default function MapPage() {
     
     const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&waypoints=${waypoints}`;
     window.open(url, '_blank');
+  };
+
+  const optimizeRoute = async () => {
+    if (selectedAgencies.length < 3) return; // En az 3 nokta (başlangıç + bitiş + 1 ara) daha mantıklı, ama 2'de de çalışır.
+    
+    try {
+      setIsOptimizing(true);
+      // OSRM requires lng,lat
+      const coords = selectedAgencies.map(a => `${a.lng},${a.lat}`).join(';');
+      // source=first ile başlangıç noktasını sabitliyoruz
+      const res = await fetch(`https://router.project-osrm.org/trip/v1/driving/${coords}?roundtrip=false&source=first`);
+      const data = await res.json();
+
+      if (data.code === 'Ok' && data.waypoints) {
+        // OSRM waypoints array maps original index to optimized index
+        // data.waypoints[i].waypoint_index indicates the new position of the i-th original point
+        const sorted = new Array(selectedAgencies.length);
+        data.waypoints.forEach((wp, originalIndex) => {
+          sorted[wp.waypoint_index] = selectedAgencies[originalIndex];
+        });
+        setSelectedAgencies(sorted);
+      } else {
+        throw new Error(data.message || 'API Hatası');
+      }
+    } catch (err) {
+      console.error('Rota optimizasyon hatası:', err);
+      alert('Rota optimize edilirken bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsOptimizing(false);
+    }
   };
 
   if (loading) {
@@ -249,13 +280,21 @@ export default function MapPage() {
             )}
           </div>
 
-          <div className="p-4 border-t border-slate-200 bg-slate-50/50 rounded-b-2xl">
+          <div className="p-4 border-t border-slate-200 bg-slate-50/50 rounded-b-2xl flex flex-col gap-2">
+            <button
+              onClick={optimizeRoute}
+              disabled={selectedAgencies.length < 3 || isOptimizing}
+              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-2 rounded-xl text-sm font-medium transition-colors shadow-sm"
+            >
+              {isOptimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+              {isOptimizing ? 'Optimize Ediliyor...' : 'Rotayı Optimize Et (En Kısa)'}
+            </button>
             <button
               onClick={generateRouteUrl}
               disabled={selectedAgencies.length === 0}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-2.5 rounded-xl font-medium transition-colors shadow-sm"
             >
-              <Navigation className="w-4 h-4" />
+              <MapPin className="w-4 h-4" />
               Google Haritalar'da Aç
             </button>
           </div>

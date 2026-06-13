@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { X, MapPin, Phone, Mail, Building2, Calendar, FileText, Send, CheckCircle2, AlertCircle, XCircle, Trash2, Search, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, MapPin, Phone, Mail, Building2, Calendar, FileText, Send, CheckCircle2, AlertCircle, XCircle, Trash2, Search, Clock, RefreshCw } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useCrm } from '../../context/CrmContext';
 
 const STATUS_OPTIONS = [
   { value: 'lead', label: 'Lead (Potansiyel)', icon: AlertCircle, color: 'text-yellow-600', bg: 'bg-yellow-100 border-yellow-200' },
@@ -21,21 +22,62 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
   const [noteSearch, setNoteSearch] = useState('');
   const [noteError, setNoteError] = useState('');
   const [statusError, setStatusError] = useState('');
-  // Inline delete confirm: stores the noteId pending confirmation
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
-  const { currentUser, userData } = useAuth();
 
-  const currentStatus = agency?.status || 'lead';
+  // Canlı CRM durumu — modal açıkken tek belge dinlenir (çok ucuz: 1 okuma/değişiklik)
+  const [liveData, setLiveData] = useState(null);
+  // Başka kullanıcı değiştirdiyse gösterilecek uyarı
+  const [conflictWarning, setConflictWarning] = useState(null);
+  // Modal açılırken başlangıç durumunu sakla (conflict tespiti için)
+  const openedStatusRef = useRef(agency?.status || 'lead');
+
+  const { currentUser, userData } = useAuth();
+  const { pushCrmUpdate } = useCrm();
+
+  // Canlı veri varsa onu, yoksa prop'tan gelen veriyi kullan
+  const currentStatus = liveData?.status ?? agency?.status ?? 'lead';
+  const liveLastUpdatedBy = liveData?.lastUpdatedBy ?? agency?.lastUpdatedBy;
+  const liveLastUpdatedAt = liveData?.lastUpdatedAt ?? agency?.lastUpdatedAt;
+
   const isAdmin = userData?.role === 'admin';
   const authorName = userData?.firstName
     ? `${userData.firstName} ${userData.lastName || ''}`.trim()
     : currentUser?.email;
 
-  // Listen to notes sub-collection
+  // ── Canlı CRM durumu (tek belge onSnapshot) ─────────────────────────────
+  // Modal açıkken sadece bu acente'nin agency_crm belgesi dinlenir.
+  // Maliyet: 1 read/değişiklik — 18k koleksiyondan bağımsız.
+  // Fayda: Başka kullanıcı aynı anda değiştirirse anında görünür.
+  useEffect(() => {
+    if (!agency?.docId) return;
+    const crmRef = doc(db, 'agency_crm', agency.docId);
+    const unsub = onSnapshot(crmRef, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setLiveData(data);
+
+      // Conflict tespiti: modal açılırken başlangıç durumu değiştiyse
+      // VE değişikliği yapan bu kullanıcı değilse uyar
+      const changedByOther =
+        data.lastUpdatedByEmail &&
+        data.lastUpdatedByEmail !== currentUser?.email &&
+        data.status !== openedStatusRef.current;
+
+      if (changedByOther) {
+        setConflictWarning({
+          newStatus: data.status,
+          by: data.lastUpdatedBy || data.lastUpdatedByEmail,
+        });
+      }
+    });
+    return () => unsub();
+  }, [agency?.docId, currentUser?.email]);
+
+  // ── Notlar (agency_crm/{docId}/notes) ───────────────────────────────────
   useEffect(() => {
     if (!agency?.docId) return;
     const q = query(
-      collection(db, 'agencies', agency.docId, 'notes'),
+      collection(db, 'agency_crm', agency.docId, 'notes'),
       orderBy('createdAt', 'desc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -50,7 +92,7 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
     setNoteError('');
     try {
       setIsSubmitting(true);
-      await addDoc(collection(db, 'agencies', agency.docId, 'notes'), {
+      await addDoc(collection(db, 'agency_crm', agency.docId, 'notes'), {
         text: newNote,
         createdAt: serverTimestamp(),
         authorEmail: currentUser?.email,
@@ -66,19 +108,26 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
     }
   };
 
-  // Audit Trail: status change records who and when
+  // ── Durum Değiştirme ─────────────────────────────────────────────────────
   const handleStatusChange = async (newStatus) => {
     if (!agency?.docId || newStatus === currentStatus) return;
     setStatusError('');
+    setConflictWarning(null); // Conflict uyarısını temizle
     try {
       setIsStatusUpdating(true);
-      const agencyRef = doc(db, 'agency_crm', agency.docId);
-      await setDoc(agencyRef, {
+      const patch = {
         status: newStatus,
         lastUpdatedBy: authorName,
         lastUpdatedByEmail: currentUser?.email,
-        lastUpdatedAt: serverTimestamp()
-      }, { merge: true });
+        lastUpdatedAt: new Date() // IndexedDB serialization uyumlu
+      };
+      
+      // openedStatusRef'i güncelle — bundan sonraki değişiklik tespiti için
+      openedStatusRef.current = newStatus;
+
+      // Global state + IndexedDB patch + Firestore yazma (veya çevrimdışı kuyruğu)
+      await pushCrmUpdate(agency.docId, patch);
+      
       if (onUpdateStatus) onUpdateStatus(agency.docId, newStatus);
     } catch (error) {
       console.error('Error updating status:', error);
@@ -90,7 +139,7 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
 
   const handleDeleteNote = async (noteId) => {
     try {
-      await deleteDoc(doc(db, 'agencies', agency.docId, 'notes', noteId));
+      await deleteDoc(doc(db, 'agency_crm', agency.docId, 'notes', noteId));
       setPendingDeleteId(null);
     } catch (err) {
       console.error('Error deleting note:', err);
@@ -137,6 +186,28 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
           {/* Status Updater */}
           <section>
             <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-3">Müşteri Durumu</h3>
+
+            {/* ⚠️ Conflict Banner — başka kullanıcı aynı anda değiştirdi */}
+            {conflictWarning && (
+              <div className="mb-3 flex items-start gap-2 bg-amber-50 border border-amber-300 text-amber-800 px-3 py-2.5 rounded-xl text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                <div>
+                  <p className="font-semibold">Eş zamanlı düzenlenme tespit edildi!</p>
+                  <p className="mt-0.5">
+                    <span className="font-medium">{conflictWarning.by}</span> bu acente'nin durumunu
+                    {' '}<span className="font-bold">{STATUS_OPTIONS.find(s => s.value === conflictWarning.newStatus)?.label ?? conflictWarning.newStatus}</span>{' '}
+                    olarak güncelledi. Aşağıdaki durum otomatik yenilendi.
+                  </p>
+                  <button
+                    onClick={() => setConflictWarning(null)}
+                    className="mt-1.5 text-amber-700 underline text-[11px]"
+                  >
+                    Uyardıyı Kapat
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               {STATUS_OPTIONS.map(status => {
                 const isSelected = currentStatus === status.value;
@@ -163,13 +234,13 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
                 <AlertCircle className="w-3.5 h-3.5" /> {statusError}
               </p>
             )}
-            {/* Audit trail: show who last updated */}
-            {agency.lastUpdatedBy && (
+            {/* Audit trail — canlı veri (liveLastUpdatedBy) kullanılır */}
+            {liveLastUpdatedBy && (
               <p className="mt-2 text-xs text-slate-400 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                Son güncelleme: <span className="font-medium text-slate-500">{agency.lastUpdatedBy}</span>
-                {agency.lastUpdatedAt?.toDate && (
-                  <> — {new Date(agency.lastUpdatedAt.toDate()).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</>
+                Son güncelleme: <span className="font-medium text-slate-500">{liveLastUpdatedBy}</span>
+                {liveLastUpdatedAt?.toDate && (
+                  <> — {new Date(liveLastUpdatedAt.toDate()).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</>
                 )}
               </p>
             )}

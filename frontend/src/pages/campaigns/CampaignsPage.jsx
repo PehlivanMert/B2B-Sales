@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { collection, query, orderBy, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Loader2, Mail, Calendar, Users, FileText, Search, Trash2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 
@@ -10,23 +10,28 @@ export default function CampaignsPage() {
   const [expandedId, setExpandedId] = useState(null); // campaign whose message is expanded
   const [confirmDeleteId, setConfirmDeleteId] = useState(null); // inline delete confirm
 
-  useEffect(() => {
-    const q = query(collection(db, 'campaigns'), orderBy('sentAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+  const fetchCampaigns = useCallback(async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'campaigns'), orderBy('sentAt', 'desc'));
+      const snapshot = await getDocs(q);
       setCampaigns(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    }, (error) => {
+    } catch (error) {
       console.error("Error fetching campaigns: ", error);
+    } finally {
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
 
   const handleDelete = async (id) => {
     try {
       await deleteDoc(doc(db, 'campaigns', id));
+      // Lokal state'den sil — Firestore'a read gitmiyor
+      setCampaigns(prev => prev.filter(c => c.id !== id));
       setConfirmDeleteId(null);
     } catch (err) {
       console.error("Error deleting campaign:", err);

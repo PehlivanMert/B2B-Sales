@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, Mail, Users, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, doc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useCrm } from '../../context/CrmContext';
 
 export default function BulkEmailModal({ recipients, onClose }) {
   const { userData, currentUser } = useAuth();
+  const { batchPushCrmUpdates } = useCrm();
   const [senderAccount, setSenderAccount] = useState('info@b2b-crm.com');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -78,17 +80,14 @@ export default function BulkEmailModal({ recipients, onClose }) {
       // Firestore max 500 doküman/batch sınırı olduğu için 500'lük gruplara bölünür.
       // Sadece durumu henüz 'contacted' olmayan acenteler güncellenir.
       const toUpdate = validRecipients.filter(a => !a.status || a.status === 'lead');
+      const now = new Date();
 
-      const BATCH_SIZE = 500;
-      for (let i = 0; i < toUpdate.length; i += BATCH_SIZE) {
-        const chunk = toUpdate.slice(i, i + BATCH_SIZE);
-        const batch = writeBatch(db);
-        chunk.forEach(agency => {
-          const ref = doc(db, 'agency_crm', agency.docId);
-          batch.set(ref, { status: 'contacted' }, { merge: true });
-        });
-        await batch.commit();
-      }
+      const entries = toUpdate.map(agency => ({
+        docId: agency.docId,
+        patch: { status: 'contacted', lastUpdatedAt: now }
+      }));
+
+      await batchPushCrmUpdates(entries);
 
       // Log to campaigns history
       await addDoc(collection(db, 'campaigns'), {

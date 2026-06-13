@@ -26,6 +26,8 @@ export default function Dashboard() {
     let updatedThisMonth = 0;
 
     const cityCounts = {};
+    const repStatsMap = {}; // Temsilci bazlı istatistikler
+
     const statusCounts = {
       lead: 0,
       contacted: 0,
@@ -48,6 +50,18 @@ export default function Dashboard() {
         const d = a.lastUpdatedAt.toDate();
         if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
           updatedThisMonth++;
+
+          // Temsilci analitiği
+          if (a.lastUpdatedBy) {
+            const rep = a.lastUpdatedBy;
+            if (!repStatsMap[rep]) {
+              repStatsMap[rep] = { name: rep, total: 0, lead: 0, contacted: 0, contracted: 0, not_interested: 0, blacklisted: 0 };
+            }
+            repStatsMap[rep].total++;
+            if (repStatsMap[rep][status] !== undefined) {
+              repStatsMap[rep][status]++;
+            }
+          }
         }
       }
 
@@ -60,7 +74,9 @@ export default function Dashboard() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    return { total, contracted, updatedThisMonth, topCities, statusCounts };
+    const topReps = Object.values(repStatsMap).sort((a, b) => b.total - a.total);
+
+    return { total, contracted, updatedThisMonth, topCities, statusCounts, topReps };
   }, [agencies]);
 
   if (agenciesLoading || crmLoading) {
@@ -171,6 +187,34 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      {/* Satış Temsilcisi Performansı (Bu Ay) */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Satış Temsilcisi Performansı (Bu Ay)</h3>
+        {metrics.topReps.length === 0 ? (
+          <p className="text-sm text-slate-500 py-8 text-center">Bu ay henüz işlem yapılmamış.</p>
+        ) : (
+          <div className="h-80 w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={metrics.topReps}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <RechartsTooltip cursor={{ fill: '#f1f5f9' }} />
+                <Legend />
+                <Bar dataKey="contracted" name="Sözleşmeli" stackId="a" fill="#10b981" />
+                <Bar dataKey="contacted" name="İletişime Geçildi" stackId="a" fill="#3b82f6" />
+                <Bar dataKey="lead" name="Potansiyel" stackId="a" fill="#eab308" />
+                <Bar dataKey="not_interested" name="İlgilenmiyor" stackId="a" fill="#ef4444" />
+                <Bar dataKey="blacklisted" name="Kara Liste" stackId="a" fill="#64748b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );

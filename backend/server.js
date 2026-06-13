@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const { buildEmailHtml } = require('./emailTemplate');
 
 const app = express();
 app.use(cors());
@@ -81,8 +82,8 @@ app.post('/api/send-email', async (req, res) => {
       to: toAddress, 
       bcc: bccAddresses.length > 0 ? bccAddresses : undefined,
       subject: subject, 
-      text: message,
-      html: message.replace(/\n/g, '<br>')
+      text: message, // Düz metin fallback
+      html: buildEmailHtml(subject, message, sender) // Profesyonel HTML şablon
     });
 
     console.log("Message sent: %s", info.messageId);

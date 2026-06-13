@@ -1,13 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, Mail, RefreshCw, X, CheckCircle2 } from 'lucide-react';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, writeBatch, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useCrm } from '../../context/CrmContext';
 
 export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications]         = useState([]);
+  const [isRefreshing, setIsRefreshing]           = useState(false);
   const { currentUser } = useAuth();
+  const { syncInfo, refreshCrmData, crmLoading }  = useCrm();
+
+  // Son sync’ten kaç dakika geçtiği (her dakika güncellenir)
+  const [syncAgo, setSyncAgo] = useState('');
+  useEffect(() => {
+    function compute() {
+      if (!syncInfo?.time) { setSyncAgo(''); return; }
+      const mins = Math.floor((Date.now() - syncInfo.time) / 60000);
+      setSyncAgo(mins < 1 ? 'az önce' : `${mins} dk önce`);
+    }
+    compute();
+    const id = setInterval(compute, 60_000);
+    return () => clearInterval(id);
+  }, [syncInfo]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshCrmData();
+    setIsRefreshing(false);
+  };
 
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -15,7 +37,8 @@ export default function Header() {
     const q = query(
       collection(db, 'notifications'),
       where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(50)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -39,6 +62,8 @@ export default function Header() {
         batch.update(doc(db, 'notifications', n.id), { isRead: true });
       });
       await batch.commit();
+      // Lokal state aninda guncelle
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
@@ -48,6 +73,8 @@ export default function Header() {
     e.stopPropagation();
     try {
       await deleteDoc(doc(db, 'notifications', id));
+      // Lokal state'den aninda kaldir
+      setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (error) {
       console.error('Error deleting notification:', error);
     }
@@ -57,6 +84,8 @@ export default function Header() {
     if (!n.isRead) {
       try {
         await updateDoc(doc(db, 'notifications', n.id), { isRead: true });
+        // Lokal state'i aninda guncelle
+        setNotifications(prev => prev.map(notif => notif.id === n.id ? { ...notif, isRead: true } : notif));
       } catch (error) {
         console.error('Error marking as read:', error);
       }
@@ -65,10 +94,36 @@ export default function Header() {
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-20">
-      <div className="flex items-center gap-2 text-slate-500 font-medium">
+      <div className="flex items-center gap-3 text-slate-500 font-medium">
+        {/* TÜRSAB static badge */}
         <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-md text-sm border border-slate-200">
           TÜRSAB Data Sync: <span className="text-emerald-600 font-bold ml-1">Güncel (17.144 Kayıt)</span>
         </span>
+
+        {/* CRM Canlı Sync Göstergesi */}
+        <div className="flex items-center gap-2">
+          {crmLoading ? (
+            <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-xs border border-amber-200">
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              CRM yükleniyor...
+            </span>
+          ) : syncInfo ? (
+            <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-xs border border-emerald-200" title={`Son sync: ${new Date(syncInfo.time).toLocaleTimeString('tr-TR')}`}>
+              <CheckCircle2 className="w-3 h-3" />
+              CRM sync{syncAgo ? `: ${syncAgo}` : ''}
+              {syncInfo.delta > 0 && <span className="ml-1 font-bold">({syncInfo.delta} Δ)</span>}
+            </span>
+          ) : null}
+
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing || crmLoading}
+            title="CRM verisini Firestore'dan yenile"
+            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-500' : ''}`} />
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-6">

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, AlertCircle, Mail, XCircle, Loader2 } from 'lucide-react';
-import { writeBatch, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { useCrm } from '../../context/CrmContext';
 
 const STATUS_OPTIONS = [
   { value: 'lead', label: 'Lead (Potansiyel)', icon: AlertCircle, color: 'text-yellow-600', bg: 'bg-yellow-100 border-yellow-200' },
@@ -16,6 +15,7 @@ export default function BulkStatusModal({ selectedAgencies, onClose }) {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { currentUser, userData } = useAuth();
+  const { batchPushCrmUpdates } = useCrm();
   
   const authorName = userData?.firstName 
     ? `${userData.firstName} ${userData.lastName || ''}`.trim() 
@@ -26,27 +26,19 @@ export default function BulkStatusModal({ selectedAgencies, onClose }) {
 
     try {
       setIsUpdating(true);
+      const now = new Date();
       
-      // Firestore batch update is limited to 500 operations per batch
-      const BATCH_SIZE = 500;
-      for (let i = 0; i < selectedAgencies.length; i += BATCH_SIZE) {
-        const batch = writeBatch(db);
-        const currentChunk = selectedAgencies.slice(i, i + BATCH_SIZE);
-        
-        currentChunk.forEach(agency => {
-          // If agency doesn't have a docId, it might not be in the agency_crm collection yet.
-          // Since the status change initializes it, we use agency.docId (which is tursab_no in our system).
-          const agencyRef = doc(db, 'agency_crm', agency.docId);
-          batch.set(agencyRef, {
-            status: selectedStatus,
-            lastUpdatedBy: authorName,
-            lastUpdatedByEmail: currentUser?.email,
-            lastUpdatedAt: serverTimestamp()
-          }, { merge: true });
-        });
-        
-        await batch.commit();
-      }
+      const entries = selectedAgencies.map(agency => ({
+        docId: agency.docId,
+        patch: {
+          status: selectedStatus,
+          lastUpdatedBy: authorName,
+          lastUpdatedByEmail: currentUser?.email,
+          lastUpdatedAt: now // IndexedDB serialization uyumlu
+        }
+      }));
+
+      await batchPushCrmUpdates(entries);
       
       onClose();
     } catch (err) {

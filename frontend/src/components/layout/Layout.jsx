@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import OfflineBanner from '../common/OfflineBanner';
 
 export default function Layout() {
   return (
@@ -13,6 +14,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <OfflineBanner />
     </div>
   );
 }
