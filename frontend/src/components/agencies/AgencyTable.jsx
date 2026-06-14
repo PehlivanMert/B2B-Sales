@@ -524,14 +524,14 @@ export default function AgencyTable({ data }) {
         ref={tableContainerRef} 
         className="relative flex-1 overflow-auto bg-white min-h-0"
       >
-        <table className="min-w-[1050px] w-full border-collapse text-left table-fixed">
+        <table className="w-full border-collapse text-left table-fixed" style={{ minWidth: table.getTotalSize() }}>
           <thead className="sticky top-0 bg-slate-100 z-10 shadow-sm">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id} className="flex w-full">
                 {headerGroup.headers.map(header => (
                   <th 
                     key={header.id} 
-                    className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 flex items-center"
+                    className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 flex items-center shrink-0"
                     style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder
@@ -555,8 +555,9 @@ export default function AgencyTable({ data }) {
                 <tr 
                   key={row.id} 
                   onClick={() => setSelectedAgency(row.original)}
-                  className="hover:bg-blue-50/50 transition-colors absolute w-full flex cursor-pointer"
+                  className="hover:bg-blue-50/50 transition-colors absolute flex cursor-pointer"
                   style={{
+                    width: '100%',
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
@@ -564,7 +565,7 @@ export default function AgencyTable({ data }) {
                   {row.getVisibleCells().map(cell => (
                     <td 
                       key={cell.id} 
-                      className="px-4 py-2 flex items-center text-sm text-slate-600 border-b border-transparent group-hover:border-blue-100 overflow-hidden"
+                      className="px-4 py-2 flex items-center text-sm text-slate-600 border-b border-transparent group-hover:border-blue-100 overflow-hidden shrink-0"
                       style={{ width: cell.column.getSize() }}
                     >
                       {cell.column.id === 'actions' ? (
