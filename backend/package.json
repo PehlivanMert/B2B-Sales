@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "test": "echo \"No backend tests configured\""
+    "test": "echo \"No backend tests configured\"",
+    "build": "echo 'No build needed for backend'"
   },
   "keywords": [],
   "author": "",

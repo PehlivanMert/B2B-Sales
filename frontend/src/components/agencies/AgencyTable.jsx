@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as XLSX from 'xlsx';
@@ -12,7 +12,7 @@ import ImportModal from './ImportModal';
 function useCopyToClipboard() {
   const [copiedText, setCopiedText] = useState(null);
 
-  const copy = async (text) => {
+  const copy = useCallback(async (text) => {
     if (!navigator?.clipboard) {
       console.warn('Clipboard not supported');
       return false;
@@ -27,7 +27,7 @@ function useCopyToClipboard() {
       setCopiedText(null);
       return false;
     }
-  };
+  }, []);
 
   return [copiedText, copy];
 }
