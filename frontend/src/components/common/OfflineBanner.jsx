@@ -8,7 +8,7 @@ export default function OfflineBanner() {
   if (isOnline && pendingWritesCount === 0) return null;
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-3 transition-all duration-300 ${
+    <div className={`fixed inset-x-4 bottom-24 z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg transition-all duration-300 sm:inset-x-auto sm:right-4 sm:mx-0 lg:bottom-6 ${
       !isOnline
         ? 'bg-red-50 border-red-200 text-red-700'
         : 'bg-emerald-50 border-emerald-200 text-emerald-700'
