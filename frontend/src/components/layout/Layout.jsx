@@ -10,7 +10,7 @@ export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-dvh bg-slate-50 font-sans text-slate-900 overflow-hidden">
+    <div className="flex h-dvh bg-slate-50 font-sans text-slate-900 overflow-hidden">
       <Sidebar isMobileOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:ml-64">
         <Header onMenuClick={() => setIsMobileMenuOpen(true)} />

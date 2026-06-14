@@ -44,6 +44,14 @@ export default function AgencyTable({ data }) {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
 
+  const agenciesMapForImport = useMemo(() => {
+    const map = {};
+    if (isImportModalOpen) {
+      data.forEach(a => { if (a.tursab_no) map[String(a.tursab_no)] = a.docId; });
+    }
+    return map;
+  }, [data, isImportModalOpen]);
+
   // Debounce: Apply filter to table 300ms after user stops typing
   useEffect(() => {
     const timer = setTimeout(() => setGlobalFilter(inputValue), 300);
@@ -327,7 +335,7 @@ export default function AgencyTable({ data }) {
   };
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col flex-1 min-h-0 w-full relative">
       {selectedAgency && (
         <AgencyDetailModal 
           agency={selectedAgency} 
@@ -357,11 +365,7 @@ export default function AgencyTable({ data }) {
 
       {isImportModalOpen && (
         <ImportModal
-          agenciesMap={useMemo(() => {
-            const map = {};
-            data.forEach(a => { if (a.tursab_no) map[String(a.tursab_no)] = a.docId; });
-            return map;
-          }, [data])}
+          agenciesMap={agenciesMapForImport}
           onClose={() => setIsImportModalOpen(false)}
         />
       )}
