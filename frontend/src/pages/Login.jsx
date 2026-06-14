@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Building2, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
@@ -18,7 +18,7 @@ export default function Login() {
       setLoading(true);
       await login(email, password);
       navigate('/');
-    } catch (err) {
+    } catch (error) {
       setError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
     } finally {
       setLoading(false);

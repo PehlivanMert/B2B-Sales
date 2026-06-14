@@ -1,0 +1,62 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+/home/mert/Masaüstü/B2B Sales/frontend/scripts/fixDistricts.js
+  33:9  error  'city' is assigned a value but never used  no-unused-vars
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/components/agencies/AgencyTable.jsx
+  218:17  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  216 |   );
+  217 |
+> 218 |   const table = useReactTable({
+      |                 ^^^^^^^^^^^^^ TanStack Table's `useReactTable()` API returns functions that cannot be memoized safely
+  219 |     data,
+  220 |     columns,
+  221 |     state: {  react-hooks/incompatible-library
+  264:9   error    The value assigned to 'exportData' is not used in subsequent statements                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-useless-assignment
+  360:24  error    React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/rules-of-hooks
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/components/common/PwaInstallPrompt.jsx
+  32:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  30 |
+  31 |     const mediaQuery = window.matchMedia('(display-mode: standalone)');
+> 32 |     setIsInstalled(mediaQuery.matches || window.navigator.standalone === true);
+     |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  33 |
+  34 |     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+  35 |     window.addEventListener('appinstalled', handleInstalled);  react-hooks/set-state-in-effect
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/context/AgenciesContext.jsx
+  44:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/context/AuthContext.jsx
+  8:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/context/CrmContext.jsx
+  234:16  error  'err' is defined but never used                                                                                                 no-unused-vars
+  263:16  error  'err' is defined but never used                                                                                                 no-unused-vars
+  297:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/pages/Dashboard.jsx
+  173:60  error  'value' is defined but never used  no-unused-vars
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/pages/Login.jsx
+  21:14  error  'error' is defined but never used  no-unused-vars
+
+/home/mert/Masaüstü/B2B Sales/frontend/src/pages/map/MapPage.jsx
+  4:50  error  'useMap' is defined but never used  no-unused-vars
+
+✖ 13 problems (12 errors, 1 warning)
+

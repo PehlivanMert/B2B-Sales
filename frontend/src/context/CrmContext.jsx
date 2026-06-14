@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { collection, getDocs, query, where, orderBy, startAfter, limit, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import {
@@ -174,30 +174,12 @@ export function CrmProvider({ children }) {
       .catch(console.error);
   }, []);
 
-  // ── Offline / Online Listener ─────────────────────────────────────────────
-  useEffect(() => {
-    const handleOnline = () => { setIsOnline(true); flushPendingWrites(); };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // İlk açılışta kuyrukta bir şey var mı kontrol et
-    getAllPendingWrites().then(writes => setPendingWritesCount(writes.length));
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
   // ── Kuyruk Flush (Online olunca Firestore'a aktar) ────────────────────────
   const flushPendingWrites = async () => {
     const writes = await getAllPendingWrites();
     if (writes.length === 0) return;
 
     try {
-      const batch = writeBatch(db);
       // Batch limiti 500
       const chunks = [];
       for (let i = 0; i < writes.length; i += 500) {
@@ -222,6 +204,23 @@ export function CrmProvider({ children }) {
       console.error('Kuyruk flush hatası:', err);
     }
   };
+
+  // ── Offline / Online Listener ─────────────────────────────────────────────
+  useEffect(() => {
+    const handleOnline = () => { setIsOnline(true); flushPendingWrites(); };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // İlk açılışta kuyrukta bir şey var mı kontrol et
+    getAllPendingWrites().then(writes => setPendingWritesCount(writes.length));
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // ── Tek belge kaydet (Ağ durumuna göre Firestore veya Kuyruk) ────────────
   const pushCrmUpdate = async (docId, patch) => {

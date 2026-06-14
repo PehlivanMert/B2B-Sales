@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, orderBy, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Loader2, Mail, Calendar, Users, FileText, Search, Trash2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
@@ -24,6 +24,7 @@ export default function CampaignsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCampaigns();
   }, [fetchCampaigns]);
 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, MapPin, Phone, Mail, Building2, Calendar, FileText, Send, CheckCircle2, AlertCircle, XCircle, Trash2, Search, Clock, RefreshCw } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { useState, useEffect, useRef } from 'react';
+import { X, MapPin, Phone, Mail, Building2, Calendar, FileText, Send, CheckCircle2, AlertCircle, XCircle, Trash2, Search, Clock, } from 'lucide-react';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, deleteDoc, } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useCrm } from '../../context/CrmContext';

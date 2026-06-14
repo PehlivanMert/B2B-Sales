@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Building2, LogOut, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';

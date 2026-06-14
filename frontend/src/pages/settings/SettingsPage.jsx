@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Loader2, User, Shield, CheckCircle2 } from 'lucide-react';
+import { Loader2, User, Shield } from 'lucide-react';
 
 export default function SettingsPage() {
   const { userData, currentUser } = useAuth();
@@ -18,18 +18,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (userData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProfileData({
         firstName: userData.firstName || '',
         lastName: userData.lastName || ''
       });
     }
   }, [userData]);
-
-  useEffect(() => {
-    if (isAdmin) {
-      fetchUsers();
-    }
-  }, [isAdmin]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -44,6 +39,13 @@ export default function SettingsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAdmin) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchUsers();
+    }
+  }, [isAdmin]);
 
   const updateUser = async (userId, field, value) => {
     setSaving(userId);

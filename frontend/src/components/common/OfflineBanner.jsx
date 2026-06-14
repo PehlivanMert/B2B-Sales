@@ -1,4 +1,3 @@
-import React from 'react';
 import { WifiOff, Wifi, RefreshCw } from 'lucide-react';
 import { useCrm } from '../../context/CrmContext';
 

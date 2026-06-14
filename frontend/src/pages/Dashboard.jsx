@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useCrm } from '../context/CrmContext';
 import { useAgencies } from '../context/AgenciesContext';
-import { Loader2, Users, FileCheck, Building, TrendingUp } from 'lucide-react';
+import { Loader2, Users, FileCheck, Building, } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function Dashboard() {

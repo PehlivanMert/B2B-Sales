@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect, } from 'react';
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as XLSX from 'xlsx';
-import { Search, MapPin, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Send, Edit, ChevronDown, Upload } from 'lucide-react';
+import { Search, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Send, Edit, ChevronDown, Upload } from 'lucide-react';
 import AgencyDetailModal from './AgencyDetailModal';
 import BulkEmailModal from './BulkEmailModal';
 import BulkStatusModal from './BulkStatusModal';

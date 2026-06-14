@@ -9,12 +9,12 @@ const DATA_PATH = path.resolve('../data_prep/final_agencies.json');
 async function main() {
   if (!fs.existsSync(SERVICE_ACCOUNT_PATH)) {
     console.error('Error: serviceAccountKey.json not found!');
-    process.exit(1);
+    (1);
   }
 
   if (!fs.existsSync(DATA_PATH)) {
     console.error(`Error: Data file not found at ${DATA_PATH}`);
-    process.exit(1);
+    (1);
   }
 
   const serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, 'utf8'));

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useCrm } from '../../context/CrmContext';
 import { useAgencies } from '../../context/AgenciesContext';
 import AgencyTable from '../../components/agencies/AgencyTable';

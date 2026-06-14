@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Download, RefreshCw, Smartphone, X } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
@@ -7,7 +7,7 @@ const STORAGE_KEY = 'b2b-crm:pwa-install-dismissed';
 export default function PwaInstallPrompt() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) === 'true' : false);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -17,8 +17,6 @@ export default function PwaInstallPrompt() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-
-    setIsDismissed(window.localStorage.getItem(STORAGE_KEY) === 'true');
 
     const handleBeforeInstall = (event) => {
       event.preventDefault();

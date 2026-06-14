@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { X, UploadCloud, FileSpreadsheet, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useCrm } from '../../context/CrmContext';
@@ -45,7 +45,7 @@ export default function ImportModal({ onClose, agenciesMap }) {
         let invalidStatusCount = 0;
         const updates = [];
 
-        json.forEach((row, index) => {
+        json.forEach((row) => {
           const tursabNo = row['Belge No'] || row['TURSAB_NO'] || row['tursab_no'];
           const statusText = row['Durum'] || row['STATUS'] || row['status'];
 
