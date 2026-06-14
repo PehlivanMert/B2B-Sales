@@ -99,7 +99,7 @@ export default function Header({ onMenuClick }) {
           <button
             type="button"
             onClick={onMenuClick}
-            className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden browser-only"
             aria-label="Menüyü aç"
           >
             <Menu className="h-5 w-5" />

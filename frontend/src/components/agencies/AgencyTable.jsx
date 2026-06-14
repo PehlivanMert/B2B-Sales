@@ -518,7 +518,7 @@ export default function AgencyTable({ data }) {
       {/* Virtualized Table Body */}
       <div 
         ref={tableContainerRef} 
-        className="relative flex-1 overflow-auto bg-white"
+        className="relative flex-1 overflow-auto bg-white min-h-0"
       >
         <table className="min-w-[1050px] w-full border-collapse text-left table-fixed">
           <thead className="sticky top-0 bg-slate-100 z-10 shadow-sm">

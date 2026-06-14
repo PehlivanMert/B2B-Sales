@@ -14,11 +14,11 @@ export default function Layout() {
       <Sidebar isMobileOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:ml-64">
         <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
-        <main className="app-shell-scroll flex-1 overflow-auto px-4 pb-24 pt-4 sm:px-6 sm:pb-28 sm:pt-6 lg:px-8 lg:pb-8 relative">
+        <main className="app-shell-scroll flex-1 overflow-auto px-4 pb-24 pt-4 sm:px-6 sm:pb-28 sm:pt-6 lg:px-8 lg:pb-8 relative flex flex-col">
           <Outlet />
         </main>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden pwa-only">
         <div className="mx-auto grid max-w-xl grid-cols-5 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;

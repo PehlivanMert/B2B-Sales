@@ -103,4 +103,12 @@
   .app-shell-scroll {
     overscroll-behavior: contain;
   }
+
+  /* PWA Visibility Rules */
+  @media (display-mode: standalone) {
+    .browser-only { display: none !important; }
+  }
+  @media not all and (display-mode: standalone) {
+    .pwa-only { display: none !important; }
+  }
 }
