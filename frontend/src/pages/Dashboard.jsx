@@ -81,7 +81,7 @@ export default function Dashboard() {
 
   if (agenciesLoading || crmLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
+      <div className="app-content-height flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
         <p className="text-slate-500 font-medium">Dashboard verileri yükleniyor...</p>
       </div>
@@ -99,7 +99,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Dashboard</h1>
       </div>
       

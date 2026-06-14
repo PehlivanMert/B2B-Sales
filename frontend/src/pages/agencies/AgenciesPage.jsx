@@ -20,7 +20,7 @@ export default function AgenciesPage() {
 
   if (agenciesLoading || crmLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
+      <div className="app-content-height flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
         <p className="text-slate-500 font-medium">Acente verileri yükleniyor... (Bu işlem ilk seferde biraz sürebilir)</p>
       </div>
@@ -29,7 +29,7 @@ export default function AgenciesPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
+      <div className="app-content-height flex flex-col items-center justify-center">
         <div className="bg-red-50 text-red-600 p-6 rounded-xl border border-red-200 text-center max-w-lg">
           <p className="font-semibold mb-2">Hata Oluştu</p>
           <p className="text-sm">{error}</p>
@@ -40,7 +40,7 @@ export default function AgenciesPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">TÜRSAB Acenteleri</h1>
           <p className="text-sm text-slate-500 mt-1">Sistemdeki tüm kayıtlı seyahat acentelerini filtreleyin ve yönetin.</p>

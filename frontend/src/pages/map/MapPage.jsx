@@ -43,6 +43,7 @@ export default function MapPage() {
   // Selected agencies for routing
   const [selectedAgencies, setSelectedAgencies] = useState([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isRoutePanelOpen, setIsRoutePanelOpen] = useState(false);
 
   // Status filter
   const [statusFilter, setStatusFilter] = useState('');
@@ -89,6 +90,7 @@ export default function MapPage() {
       }
       return [...prev, agency];
     });
+    setIsRoutePanelOpen(true);
   };
 
   const generateRouteUrl = () => {
@@ -140,7 +142,7 @@ export default function MapPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
+      <div className="app-content-height flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500 mb-4" />
         <p className="text-slate-500 font-medium">Harita verileri yükleniyor...</p>
       </div>
@@ -149,7 +151,7 @@ export default function MapPage() {
 
   return (
     <div className="h-full flex flex-col relative">
-      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="mb-4 flex flex-col gap-4 lg:mb-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Saha Operasyon Haritası</h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -157,14 +159,14 @@ export default function MapPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <select
             value={cityFilter}
             onChange={(e) => {
               setCityFilter(e.target.value);
               setDistrictFilter('');
             }}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-w-[150px] shadow-sm"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm sm:min-w-[160px] sm:w-auto"
           >
             <option value="">Tüm Türkiye</option>
             {uniqueCities.map(c => <option key={c} value={c}>{c}</option>)}
@@ -174,7 +176,7 @@ export default function MapPage() {
             value={districtFilter}
             onChange={(e) => setDistrictFilter(e.target.value)}
             disabled={!cityFilter}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-w-[150px] shadow-sm disabled:bg-slate-50"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm disabled:bg-slate-50 sm:min-w-[160px] sm:w-auto"
           >
             <option value="">Tüm İlçeler</option>
             {uniqueDistricts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -183,7 +185,7 @@ export default function MapPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white min-w-[150px] shadow-sm"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm sm:min-w-[170px] sm:w-auto"
           >
             <option value="">Tüm Durumlar</option>
             <option value="lead">Potansiyel</option>
@@ -192,10 +194,19 @@ export default function MapPage() {
             <option value="not_interested">İlgilenmiyor</option>
             <option value="blacklisted">Kara Liste</option>
           </select>
+
+          <button
+            type="button"
+            onClick={() => setIsRoutePanelOpen((prev) => !prev)}
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 lg:hidden"
+          >
+            <Navigation className="h-4 w-4 text-blue-600" />
+            Rota Paneli ({selectedAgencies.length})
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 relative min-h-0 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden z-0">
+      <div className="relative min-h-[70dvh] flex-1 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm z-0">
         {/* Map Container */}
         <MapContainer 
           center={[39.0, 35.0]} 
@@ -241,16 +252,31 @@ export default function MapPage() {
           </MarkerClusterGroup>
         </MapContainer>
 
-        {/* Selected Route Sidebar Overlay */}
-        <div className="absolute right-4 top-4 bottom-4 w-80 bg-white/95 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col z-[1000]">
+        <div
+          className={`absolute inset-x-3 bottom-3 z-[1000] flex max-h-[55dvh] flex-col rounded-[24px] border border-slate-200/70 bg-white/95 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-all duration-300 lg:inset-x-auto lg:bottom-4 lg:right-4 lg:top-4 lg:max-h-none lg:w-80 ${
+            isRoutePanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-[calc(100%-4.5rem)] opacity-100 lg:translate-y-0'
+          }`}
+        >
           <div className="p-4 border-b border-slate-200 bg-slate-50/50 rounded-t-2xl">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-blue-600" />
-              Ziyaret Rotası
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Seçilen acenteler: <span className="font-bold">{selectedAgencies.length} / 10</span>
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-blue-600" />
+                  Ziyaret Rotası
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Seçilen acenteler: <span className="font-bold">{selectedAgencies.length} / 10</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRoutePanelOpen((prev) => !prev)}
+                className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+                aria-label="Rota panelini aç veya kapat"
+              >
+                <X className={`h-4 w-4 transition-transform ${isRoutePanelOpen ? '' : 'rotate-45'}`} />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -261,7 +287,7 @@ export default function MapPage() {
               </div>
             ) : (
               selectedAgencies.map((agency, index) => (
-                <div key={agency.docId} className="flex gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 relative group">
+                <div key={agency.docId} className="group relative flex gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
                   <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
                     {index + 1}
                   </div>
@@ -271,7 +297,7 @@ export default function MapPage() {
                   </div>
                   <button 
                     onClick={() => toggleSelection(agency)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute right-2 top-1/2 rounded-lg p-1.5 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 -translate-y-1/2"
                   >
                     <X className="w-4 h-4" />
                   </button>

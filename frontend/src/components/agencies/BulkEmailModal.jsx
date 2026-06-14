@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Send, Mail, Users, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { buildApiUrl } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useCrm } from '../../context/CrmContext';
 
@@ -45,7 +46,7 @@ export default function BulkEmailModal({ recipients, onClose }) {
 
   useEffect(() => {
     // Fetch configured senders from backend
-    fetch('http://localhost:3001/api/senders')
+    fetch(buildApiUrl('/senders'))
       .then(res => res.json())
       .then(data => {
         if (data.senders && data.senders.length > 0) {
@@ -66,8 +67,7 @@ export default function BulkEmailModal({ recipients, onClose }) {
     try {
       setStatus('sending');
       
-      // Call local Node.js backend
-      const response = await fetch('http://localhost:3001/api/send-email', {
+      const response = await fetch(buildApiUrl('/send-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

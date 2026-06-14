@@ -67,10 +67,40 @@
 }
 
 @layer base {
+  html {
+    height: 100%;
+    background: rgb(248 250 252);
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   * {
     @apply border-border;
   }
+
   body {
+    min-height: 100%;
     @apply bg-background text-foreground;
+  }
+
+  #root {
+    min-height: 100dvh;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+}
+
+@layer utilities {
+  .app-content-height {
+    min-height: calc(100dvh - 8rem);
+  }
+
+  .app-shell-scroll {
+    overscroll-behavior: contain;
   }
 }

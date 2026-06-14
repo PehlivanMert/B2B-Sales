@@ -367,151 +367,160 @@ export default function AgencyTable({ data }) {
       )}
 
       {/* Filters Toolbar */}
-      <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex flex-wrap items-center gap-3 flex-1">
-          <div className="relative">
+      <div className="border-b border-slate-200 bg-slate-50/50 p-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-3 flex-1">
+              <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input
               value={inputValue ?? ''}
               onChange={e => setInputValue(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-64 bg-white"
+              className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:w-64"
               placeholder="Acente Adı veya Belge No..."
             />
-          </div>
+              </div>
 
-          <select
-            value={table.getColumn('city')?.getFilterValue() ?? ''}
-            onChange={e => table.getColumn('city')?.setFilterValue(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 bg-white min-w-[140px]"
-          >
-            <option value="">Tüm Şehirler</option>
-            {uniqueCities.map(city => (
-              <option key={city} value={city}>{city}</option>
-            ))}
-          </select>
-
-          <select
-            value={table.getColumn('district')?.getFilterValue() ?? ''}
-            onChange={e => table.getColumn('district')?.setFilterValue(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 bg-white min-w-[140px]"
-            disabled={!table.getColumn('city')?.getFilterValue()}
-          >
-            <option value="">Tüm İlçeler</option>
-            {uniqueDistricts.map(dist => (
-              <option key={dist} value={dist}>{dist}</option>
-            ))}
-          </select>
-
-          <select
-            value={table.getColumn('btk')?.getFilterValue() ?? ''}
-            onChange={e => table.getColumn('btk')?.setFilterValue(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 bg-white min-w-[180px] max-w-[250px] truncate"
-          >
-            <option value="">Tüm BTK'lar</option>
-            {uniqueBtks.map(btk => (
-              <option key={btk} value={btk}>{btk}</option>
-            ))}
-          </select>
-
-          <select
-            value={table.getColumn('status')?.getFilterValue() ?? ''}
-            onChange={e => table.getColumn('status')?.setFilterValue(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 bg-white min-w-[150px]"
-          >
-            <option value="">Tüm Durumlar</option>
-            <option value="lead">Potansiyel</option>
-            <option value="contacted">İletişime Geçildi</option>
-            <option value="contracted">Sözleşmeli</option>
-            <option value="not_interested">İlgilenmiyor</option>
-            <option value="blacklisted">Kara Liste</option>
-          </select>
-
-          {(inputValue || columnFilters.length > 0) && (
-            <button 
-              onClick={clearFilters}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <FilterX className="w-4 h-4" />
-              Temizle
-            </button>
-          )}
-
-          <div className="flex items-center gap-2 ml-auto">
-            {Object.keys(rowSelection).length > 0 && (
-              <button 
-                onClick={() => setIsBulkStatusOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors border border-amber-200"
+              <select
+                value={table.getColumn('city')?.getFilterValue() ?? ''}
+                onChange={e => table.getColumn('city')?.setFilterValue(e.target.value)}
+                className="min-w-[140px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
               >
-                <Edit className="w-4 h-4" />
-                <span className="hidden sm:inline">Toplu Durum ({Object.keys(rowSelection).length})</span>
-              </button>
-            )}
+                <option value="">Tüm Şehirler</option>
+                {uniqueCities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
 
-            <button 
-              onClick={() => setIsBulkEmailOpen(true)}
-              disabled={rows.length === 0}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                Toplu E-posta {Object.keys(rowSelection).length > 0 && `(${Object.keys(rowSelection).length})`}
-              </span>
-            </button>
-
-            <button 
-              onClick={() => setIsImportModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">İçe Aktar</span>
-            </button>
-
-            <div className="relative">
-              <button 
-                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                disabled={data.length === 0}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              <select
+                value={table.getColumn('district')?.getFilterValue() ?? ''}
+                onChange={e => table.getColumn('district')?.setFilterValue(e.target.value)}
+                className="min-w-[140px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
+                disabled={!table.getColumn('city')?.getFilterValue()}
               >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Excel'e Aktar</span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
+                <option value="">Tüm İlçeler</option>
+                {uniqueDistricts.map(dist => (
+                  <option key={dist} value={dist}>{dist}</option>
+                ))}
+              </select>
 
-              {isExportMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsExportMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
-                    <button onClick={() => handleExportExcel('all_visible')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
-                      Tüm Görünür Kayıtlar ({rows.length})
-                    </button>
-                    <div className="h-px bg-slate-100 my-1" />
-                    <button onClick={() => handleExportExcel('contracted')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
-                      Sadece Sözleşmeliler
-                    </button>
-                    <button onClick={() => handleExportExcel('lead')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
-                      Sadece Potansiyeller
-                    </button>
-                    <button onClick={() => handleExportExcel('contacted')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
-                      Sadece İletişime Geçilenler
-                    </button>
-                  </div>
-                </>
+              <select
+                value={table.getColumn('btk')?.getFilterValue() ?? ''}
+                onChange={e => table.getColumn('btk')?.setFilterValue(e.target.value)}
+                className="max-w-[250px] min-w-[180px] truncate rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="">Tüm BTK'lar</option>
+                {uniqueBtks.map(btk => (
+                  <option key={btk} value={btk}>{btk}</option>
+                ))}
+              </select>
+
+              <select
+                value={table.getColumn('status')?.getFilterValue() ?? ''}
+                onChange={e => table.getColumn('status')?.setFilterValue(e.target.value)}
+                className="min-w-[150px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="">Tüm Durumlar</option>
+                <option value="lead">Potansiyel</option>
+                <option value="contacted">İletişime Geçildi</option>
+                <option value="contracted">Sözleşmeli</option>
+                <option value="not_interested">İlgilenmiyor</option>
+                <option value="blacklisted">Kara Liste</option>
+              </select>
+
+              {(inputValue || columnFilters.length > 0) && (
+                <button 
+                  onClick={clearFilters}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                >
+                  <FilterX className="w-4 h-4" />
+                  Temizle
+                </button>
               )}
             </div>
+
+            <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+              {Object.keys(rowSelection).length > 0 && (
+                <button 
+                  onClick={() => setIsBulkStatusOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span className="hidden sm:inline">Toplu Durum ({Object.keys(rowSelection).length})</span>
+                </button>
+              )}
+
+              <button 
+                onClick={() => setIsBulkEmailOpen(true)}
+                disabled={rows.length === 0}
+                className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  Toplu E-posta {Object.keys(rowSelection).length > 0 && `(${Object.keys(rowSelection).length})`}
+                </span>
+              </button>
+
+              <button 
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">İçe Aktar</span>
+              </button>
+
+              <div className="relative">
+                <button 
+                  onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                  disabled={data.length === 0}
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Excel'e Aktar</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {isExportMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsExportMenuOpen(false)} />
+                    <div className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-slate-200 bg-white py-2 shadow-lg">
+                      <button onClick={() => handleExportExcel('all_visible')} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                        Tüm Görünür Kayıtlar ({rows.length})
+                      </button>
+                      <div className="my-1 h-px bg-slate-100" />
+                      <button onClick={() => handleExportExcel('contracted')} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                        Sadece Sözleşmeliler
+                      </button>
+                      <button onClick={() => handleExportExcel('lead')} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                        Sadece Potansiyeller
+                      </button>
+                      <button onClick={() => handleExportExcel('contacted')} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600">
+                        Sadece İletişime Geçilenler
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div className="text-sm font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
-          <span className="text-blue-600 font-bold">{rows.length}</span> acente bulundu
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">
+              Mobilde tabloyu yatay kaydırarak tüm kolonlara erişebilirsiniz.
+            </p>
+            <div className="w-fit rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-500">
+              <span className="font-bold text-blue-600">{rows.length}</span> acente bulundu
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Virtualized Table Body */}
       <div 
         ref={tableContainerRef} 
-        className="flex-1 overflow-auto relative bg-white"
+        className="relative flex-1 overflow-auto bg-white"
       >
-        <table className="w-full text-left border-collapse table-fixed">
+        <table className="min-w-[1050px] w-full border-collapse text-left table-fixed">
           <thead className="sticky top-0 bg-slate-100 z-10 shadow-sm">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id} className="flex w-full">
