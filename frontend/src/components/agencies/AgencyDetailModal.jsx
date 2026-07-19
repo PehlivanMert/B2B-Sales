@@ -250,20 +250,53 @@ export default function AgencyDetailModal({ agency, onClose, onUpdateStatus }) {
           <section className="bg-slate-50 rounded-xl p-5 border border-slate-100">
             <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4">Acente Bilgileri</h3>
             <div className="space-y-4">
-              <div className="flex gap-3 text-sm">
-                <MapPin className="w-5 h-5 text-slate-400 shrink-0" />
-                <div className="text-slate-600">
+              <div className="flex gap-3 text-sm items-start">
+                <MapPin className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                <div className="text-slate-600 flex-1">
                   <p className="font-medium text-slate-800">{agency.city} / {agency.district}</p>
                   <p className="mt-0.5">{agency.address}</p>
                 </div>
+                {agency.address && (
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(agency.address + ' ' + agency.city + ' ' + agency.district)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 text-blue-600 bg-blue-50 rounded-lg shrink-0 hover:bg-blue-100 transition-colors flex items-center justify-center h-fit"
+                    title="Yol Tarifi Al"
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </a>
+                )}
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Phone className="w-5 h-5 text-slate-400 shrink-0" />
-                <span className="text-slate-700 font-medium">{agency.phone || 'Belirtilmemiş'}</span>
+              <div className="flex items-center gap-3 text-sm justify-between">
+                <div className="flex items-center gap-3">
+                  <Phone className="w-5 h-5 text-slate-400 shrink-0" />
+                  <span className="text-slate-700 font-medium">{agency.phone || 'Belirtilmemiş'}</span>
+                </div>
+                {agency.phone && (
+                  <a 
+                    href={`tel:${agency.phone.replace(/\s+/g, '')}`}
+                    className="p-2 text-emerald-600 bg-emerald-50 rounded-lg shrink-0 hover:bg-emerald-100 transition-colors flex items-center justify-center"
+                    title="Ara"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                )}
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Mail className="w-5 h-5 text-slate-400 shrink-0" />
-                <span className="text-slate-700 font-medium">{agency.email || 'Belirtilmemiş'}</span>
+              <div className="flex items-center gap-3 text-sm justify-between">
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-slate-400 shrink-0" />
+                  <span className="text-slate-700 font-medium">{agency.email || 'Belirtilmemiş'}</span>
+                </div>
+                {agency.email && (
+                  <a 
+                    href={`mailto:${agency.email}`}
+                    className="p-2 text-blue-600 bg-blue-50 rounded-lg shrink-0 hover:bg-blue-100 transition-colors flex items-center justify-center"
+                    title="E-posta Gönder"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </a>
+                )}
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Building2 className="w-5 h-5 text-slate-400 shrink-0" />

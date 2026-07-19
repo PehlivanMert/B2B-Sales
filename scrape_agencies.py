@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 URL = "https://online.tursab.org.tr/publicpages/embedded/agencysearch/"
-EXCEL_PATH = "/home/mert/agency.xlsx"
+EXCEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agency.xlsx")
 
 # Headers to make the requests look like they come from a real browser
 HEADERS = {

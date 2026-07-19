@@ -16,7 +16,7 @@ export default defineConfig({
         id: '/',
         name: 'TURSAB CRM ve Saha Operasyonları',
         short_name: 'TURSAB CRM',
-        description: 'TURSAB acente yönetimi, saha operasyonları ve kampanya süreçleri için modern PWA.',
+        description: 'TURSAB acente yönetimi ve saha operasyonları için modern PWA.',
         lang: 'tr',
         start_url: '/',
         scope: '/',

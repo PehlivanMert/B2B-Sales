@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 URL = "https://online.tursab.org.tr/publicpages/embedded/agencysearch/"
-DB_PATH = "/home/mert/agencies_cache.db"
-EXCEL_PATH = "/home/mert/agency.xlsx"
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agencies_cache.db")
+EXCEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agency.xlsx")
 
 # Headers to mimic a real browser
 HEADERS = {

@@ -2,9 +2,8 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as XLSX from 'xlsx';
-import { Search, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Send, Edit, ChevronDown, Upload } from 'lucide-react';
+import { Search, Phone, Mail, MessageCircle, Copy, Check, FilterX, Download, Edit, ChevronDown, Upload, Filter } from 'lucide-react';
 import AgencyDetailModal from './AgencyDetailModal';
-import BulkEmailModal from './BulkEmailModal';
 import BulkStatusModal from './BulkStatusModal';
 import ImportModal from './ImportModal';
 
@@ -38,11 +37,11 @@ export default function AgencyTable({ data }) {
   const [columnFilters, setColumnFilters] = useState([]);
   const [copiedText, copy] = useCopyToClipboard();
   const [selectedAgency, setSelectedAgency] = useState(null);
-  const [isBulkEmailOpen, setIsBulkEmailOpen] = useState(false);
   const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const agenciesMapForImport = useMemo(() => {
     const map = {};
@@ -344,14 +343,7 @@ export default function AgencyTable({ data }) {
         />
       )}
 
-      {isBulkEmailOpen && (
-        <BulkEmailModal 
-          recipients={Object.keys(rowSelection).length > 0 
-            ? table.getSelectedRowModel().rows.map(r => r.original)
-            : rows.map(r => r.original)} 
-          onClose={() => setIsBulkEmailOpen(false)} 
-        />
-      )}
+
 
       {isBulkStatusOpen && (
         <BulkStatusModal
@@ -375,72 +367,82 @@ export default function AgencyTable({ data }) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-3 flex-1">
-              <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input
-              value={inputValue ?? ''}
-              onChange={e => setInputValue(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:w-64"
-              placeholder="Acente Adı veya Belge No..."
-            />
+              <div className="relative w-full sm:w-auto flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    value={inputValue ?? ''}
+                    onChange={e => setInputValue(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:w-64"
+                    placeholder="Acente Adı veya Belge No..."
+                  />
+                </div>
+                <button 
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  className="sm:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-300 bg-white text-slate-600 shrink-0"
+                >
+                  <Filter className="w-4 h-4" />
+                </button>
               </div>
 
-              <select
-                value={table.getColumn('city')?.getFilterValue() ?? ''}
-                onChange={e => table.getColumn('city')?.setFilterValue(e.target.value)}
-                className="min-w-[140px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="">Tüm Şehirler</option>
-                {uniqueCities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-
-              <select
-                value={table.getColumn('district')?.getFilterValue() ?? ''}
-                onChange={e => table.getColumn('district')?.setFilterValue(e.target.value)}
-                className="min-w-[140px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
-                disabled={!table.getColumn('city')?.getFilterValue()}
-              >
-                <option value="">Tüm İlçeler</option>
-                {uniqueDistricts.map(dist => (
-                  <option key={dist} value={dist}>{dist}</option>
-                ))}
-              </select>
-
-              <select
-                value={table.getColumn('btk')?.getFilterValue() ?? ''}
-                onChange={e => table.getColumn('btk')?.setFilterValue(e.target.value)}
-                className="max-w-[250px] min-w-[180px] truncate rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="">Tüm BTK'lar</option>
-                {uniqueBtks.map(btk => (
-                  <option key={btk} value={btk}>{btk}</option>
-                ))}
-              </select>
-
-              <select
-                value={table.getColumn('status')?.getFilterValue() ?? ''}
-                onChange={e => table.getColumn('status')?.setFilterValue(e.target.value)}
-                className="min-w-[150px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="">Tüm Durumlar</option>
-                <option value="lead">Potansiyel</option>
-                <option value="contacted">İletişime Geçildi</option>
-                <option value="contracted">Sözleşmeli</option>
-                <option value="not_interested">İlgilenmiyor</option>
-                <option value="blacklisted">Kara Liste</option>
-              </select>
-
-              {(inputValue || columnFilters.length > 0) && (
-                <button 
-                  onClick={clearFilters}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+              <div className={`w-full sm:w-auto sm:flex flex-wrap items-center gap-3 ${showMobileFilters ? 'flex' : 'hidden'}`}>
+                <select
+                  value={table.getColumn('city')?.getFilterValue() ?? ''}
+                  onChange={e => table.getColumn('city')?.setFilterValue(e.target.value)}
+                  className="min-w-[140px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
                 >
-                  <FilterX className="w-4 h-4" />
-                  Temizle
-                </button>
-              )}
+                  <option value="">Tüm Şehirler</option>
+                  {uniqueCities.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={table.getColumn('district')?.getFilterValue() ?? ''}
+                  onChange={e => table.getColumn('district')?.setFilterValue(e.target.value)}
+                  className="min-w-[140px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
+                  disabled={!table.getColumn('city')?.getFilterValue()}
+                >
+                  <option value="">Tüm İlçeler</option>
+                  {uniqueDistricts.map(dist => (
+                    <option key={dist} value={dist}>{dist}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={table.getColumn('btk')?.getFilterValue() ?? ''}
+                  onChange={e => table.getColumn('btk')?.setFilterValue(e.target.value)}
+                  className="max-w-[250px] min-w-[180px] truncate rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="">Tüm BTK'lar</option>
+                  {uniqueBtks.map(btk => (
+                    <option key={btk} value={btk}>{btk}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={table.getColumn('status')?.getFilterValue() ?? ''}
+                  onChange={e => table.getColumn('status')?.setFilterValue(e.target.value)}
+                  className="min-w-[150px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="">Tüm Durumlar</option>
+                  <option value="lead">Potansiyel</option>
+                  <option value="contacted">İletişime Geçildi</option>
+                  <option value="contracted">Sözleşmeli</option>
+                  <option value="not_interested">İlgilenmiyor</option>
+                  <option value="blacklisted">Kara Liste</option>
+                </select>
+
+                {(inputValue || columnFilters.length > 0) && (
+                  <button 
+                    onClick={clearFilters}
+                    className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                  >
+                    <FilterX className="w-4 h-4" />
+                    Temizle
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
@@ -454,16 +456,7 @@ export default function AgencyTable({ data }) {
                 </button>
               )}
 
-              <button 
-                onClick={() => setIsBulkEmailOpen(true)}
-                disabled={rows.length === 0}
-                className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:inline">
-                  Toplu E-posta {Object.keys(rowSelection).length > 0 && `(${Object.keys(rowSelection).length})`}
-                </span>
-              </button>
+
 
               <button 
                 onClick={() => setIsImportModalOpen(true)}

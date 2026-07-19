@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard';
 import AgenciesPage from './pages/agencies/AgenciesPage';
 import MapPage from './pages/map/MapPage';
 import SettingsPage from './pages/settings/SettingsPage';
-import CampaignsPage from './pages/campaigns/CampaignsPage';
 
 function App() {
   return (
@@ -22,7 +21,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="agencies" element={<AgenciesPage />} />
             <Route path="map" element={<MapPage />} />
-            <Route path="campaigns" element={<CampaignsPage />} />
+
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
