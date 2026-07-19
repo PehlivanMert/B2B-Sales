@@ -12,8 +12,9 @@
  */
 
 const DB_NAME      = 'b2b_crm_db';
-const DB_VERSION   = 2;
+const DB_VERSION   = 3; // Bumped to 3 for company_crm
 const STORE_CRM    = 'agency_crm';
+const STORE_COMPANY_CRM = 'company_crm';
 const STORE_META   = 'meta';
 const STORE_QUEUE  = 'pending_writes';
 
@@ -28,6 +29,9 @@ function openDb() {
       const db = e.target.result;
       if (!db.objectStoreNames.contains(STORE_CRM)) {
         db.createObjectStore(STORE_CRM, { keyPath: 'docId' });
+      }
+      if (!db.objectStoreNames.contains(STORE_COMPANY_CRM)) {
+        db.createObjectStore(STORE_COMPANY_CRM, { keyPath: 'docId' });
       }
       if (!db.objectStoreNames.contains(STORE_META)) {
         db.createObjectStore(STORE_META);
@@ -185,13 +189,14 @@ export async function clearCrmDb() {
  * @param {string} docId - agency_crm id'si
  * @param {object} patch - yapılan değişiklikler
  */
-export async function enqueuePendingWrite(docId, patch) {
+export async function enqueuePendingWrite(docId, patch, collection = 'agency_crm') {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_QUEUE, 'readwrite');
     const store = tx.objectStore(STORE_QUEUE);
     store.add({
       docId,
+      collection,
       patch: serialize(patch),
       createdAt: Date.now()
     });
@@ -203,13 +208,17 @@ export async function enqueuePendingWrite(docId, patch) {
 /**
  * Kuyruktaki tüm bekleyen yazmaları getirir.
  */
-export async function getAllPendingWrites() {
+export async function getAllPendingWrites(collection = 'agency_crm') {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_QUEUE, 'readonly');
     const req = tx.objectStore(STORE_QUEUE).getAll();
     req.onsuccess = () => {
-      const items = req.result.map(item => ({
+      let items = req.result;
+      // Provide backwards compatibility for items without collection
+      items = items.filter(item => (item.collection || 'agency_crm') === collection);
+      
+      items = items.map(item => ({
         ...item,
         patch: deserialize(item.patch)
       }));
@@ -235,3 +244,90 @@ export async function clearPendingWrite(id) {
   });
 }
 
+
+// ── Company CRM API ───────────────────────────────────────────────────────────
+
+export async function getAllCompanyCrmEntries() {
+  const db  = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(STORE_COMPANY_CRM, 'readonly');
+    const req = tx.objectStore(STORE_COMPANY_CRM).getAll();
+    req.onsuccess = () => {
+      const map = {};
+      req.result.forEach(({ docId, ...rest }) => {
+        map[docId] = deserialize(rest);
+      });
+      resolve(map);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function getCompanyCrmEntryCount() {
+  const db  = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(STORE_COMPANY_CRM, 'readonly');
+    const req = tx.objectStore(STORE_COMPANY_CRM).count();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+export async function putCompanyCrmEntries(entries) {
+  if (!entries.length) return;
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORE_COMPANY_CRM, 'readwrite');
+    const store = tx.objectStore(STORE_COMPANY_CRM);
+    entries.forEach(({ docId, ...data }) => {
+      store.put({ docId, ...serialize(data) });
+    });
+    tx.oncomplete = resolve;
+    tx.onerror    = () => reject(tx.error);
+  });
+}
+
+export async function patchCompanyCrmEntry(docId, patch) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORE_COMPANY_CRM, 'readwrite');
+    const store = tx.objectStore(STORE_COMPANY_CRM);
+    const getReq = store.get(docId);
+    getReq.onsuccess = () => {
+      const existing = getReq.result || { docId };
+      store.put({ ...existing, ...serialize(patch), docId });
+      resolve();
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
+}
+
+export async function clearCompanyCrmDb() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE_COMPANY_CRM], 'readwrite');
+    tx.objectStore(STORE_COMPANY_CRM).clear();
+    tx.oncomplete = resolve;
+    tx.onerror    = () => reject(tx.error);
+  });
+}
+
+export async function getCompanyLastSyncedAt() {
+  const db  = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(STORE_META, 'readonly');
+    const req = tx.objectStore(STORE_META).get('companyLastSyncedAt');
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+export async function setCompanyLastSyncedAt(ms) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readwrite');
+    tx.objectStore(STORE_META).put(ms, 'companyLastSyncedAt');
+    tx.oncomplete = resolve;
+    tx.onerror    = () => reject(tx.error);
+  });
+}
