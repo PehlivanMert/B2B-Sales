@@ -4,7 +4,13 @@ import uuid
 import os
 import time
 
-API_KEY = "AIzaSyAke5oW_vKW1DyQ_3y960xb6u9hookFf2w"
+API_KEY = ""
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(env_path):
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("GOOGLE_MAPS_API_KEY="):
+                API_KEY = line.strip().split("=", 1)[1]
 URL = "https://places.googleapis.com/v1/places:searchText"
 JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "public", "companies.json")
 
